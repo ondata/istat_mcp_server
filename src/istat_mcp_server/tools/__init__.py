@@ -7,6 +7,7 @@ from .get_concepts import handle_get_concepts
 from .get_constraints import handle_get_constraints
 from .get_data import handle_get_data
 from .get_structure import handle_get_structure
+from .get_territorial_codes import handle_get_territorial_codes
 
 __all__ = [
     'handle_discover_dataflows',
@@ -16,4 +17,5 @@ __all__ = [
     'handle_get_data',
     'handle_get_constraints',
     'get_cache_diagnostics_handler',
+    'handle_get_territorial_codes',
 ]

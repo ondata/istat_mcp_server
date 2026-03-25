@@ -22,6 +22,7 @@ from .tools import (
     handle_get_constraints,
     handle_get_data,
     handle_get_structure,
+    handle_get_territorial_codes,
 )
 from .utils.tool_helpers import configure_cache_ttls
 from .utils.logging import setup_logging
@@ -222,6 +223,27 @@ def create_server() -> Server:
                     'properties': {},
                 },
             ),
+            Tool(
+                name='get_territorial_codes',
+                description=(
+                    'Get ISTAT REF_AREA codes for a territorial level or by place name. '
+                    'Use level= to get all codes for a level (italia, ripartizione, regione, provincia, comune). '
+                    'Use name= to search by place name (e.g. "Lombardia", "Puglia", "Torino").'
+                ),
+                inputSchema={
+                    'type': 'object',
+                    'properties': {
+                        'level': {
+                            'type': 'string',
+                            'description': "Territorial level: 'italia', 'ripartizione', 'regione', 'provincia', 'comune'",
+                        },
+                        'name': {
+                            'type': 'string',
+                            'description': "Place name to search (e.g. 'Lombardia', 'Puglia', 'Torino')",
+                        },
+                    },
+                },
+            ),
         ]
 
     @server.call_tool()
@@ -255,6 +277,8 @@ def create_server() -> Server:
             elif name == 'get_cache_diagnostics':
                 result_dict = await get_cache_diagnostics_handler()
                 result = [result_dict]
+            elif name == 'get_territorial_codes':
+                result = await handle_get_territorial_codes(arguments)
             else:
                 raise ValueError(f'Unknown tool: {name}')
             
@@ -279,5 +303,5 @@ def create_server() -> Server:
             logger.info('=' * 80)
             raise
 
-    logger.info('MCP server configured with 7 tools')
+    logger.info('MCP server configured with 8 tools')
     return server
