@@ -144,6 +144,14 @@ with every dimension you leave open: 20 regions × 3 sexes × 5 age groups × 20
 | `SEX` | `["9"]` | Both sexes combined |
 | `FREQ` | `["A"]` | Annual (not monthly/quarterly) |
 
+**Default territory:** if the user does not specify a territory, always use Italy (`REF_AREA: ["IT"]`).
+Do not ask — apply this silently and mention it in the answer.
+
+**Default period:** if the user does not specify a time range, use the last available year.
+Concretely: set `start_period` and `end_period` both to the previous calendar year
+(e.g., if today is 2026, use `start_period="2025-01-01"`, `end_period="2025-12-31"`).
+Do not ask — apply this silently and mention it in the answer.
+
 Start narrow, then expand if the user asks for more granularity. A fast partial answer
 is always better than a timeout.
 
