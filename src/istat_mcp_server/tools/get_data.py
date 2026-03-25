@@ -145,13 +145,18 @@ def filter_tsv_by_dimensions(tsv_data: str, dimension_filters: dict[str, list[st
     if not col_index:
         return tsv_data
 
+    # Precompute allowed values as sets for efficient membership checks
+    allowed_values: dict[str, set[str]] = {
+        dim: set(dimension_filters[dim]) for dim in col_index
+    }
+
     filtered = [lines[0]]
     for line in lines[1:]:
         if not line:
             continue
         parts = line.split('\t')
         if all(
-            len(parts) > idx and parts[idx] in dimension_filters[dim]
+            len(parts) > idx and parts[idx] in allowed_values[dim]
             for dim, idx in col_index.items()
         ):
             filtered.append(line)
