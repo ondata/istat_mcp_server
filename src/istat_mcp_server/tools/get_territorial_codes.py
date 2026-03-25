@@ -78,6 +78,9 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
             'error': "Provide at least one of: 'level', 'name', 'region', 'province', 'capoluogo'."
         })
 
+    if level and level not in _VALID_LEVELS:
+        return format_json_response({'error': f"Invalid level '{level}'. Valid: {list(_VALID_LEVELS)}"})
+
     rows = _load_table()
 
     # --- Name search (no other filters) ---
@@ -92,8 +95,6 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
 
     # --- Level-only (no territorial filters) ---
     if level and not region and not province and not capoluogo and not name:
-        if level not in _VALID_LEVELS:
-            return format_json_response({'error': f"Invalid level '{level}'. Valid: {list(_VALID_LEVELS)}"})
         result = [_row_to_dict(r) for r in rows if r['level'] == level]
         return format_json_response({'level': level, 'codes': result})
 
