@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-semantic-fallback = [
+semantic = [
     "sentence-transformers>=3.0.0",
     "numpy>=1.26.0",
 ]
