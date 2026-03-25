@@ -51,6 +51,35 @@ data doesn't exist. Strategies to try, in order:
 Only after 2–3 failed `discover_dataflows` attempts with diverse keywords should you conclude
 that the data is not available in this MCP server and suggest alternative sources.
 
+#### Generic vs specific dataflow IDs
+
+`discover_dataflows` may return both a **generic ID** (e.g., `29_317`) and one or more **specific IDs**
+with a `_DF_` suffix (e.g., `29_317_DF_DCIS_POPSTRCIT1_1`).
+
+**Always prefer the specific `_DF_` variant.** Generic IDs are parent containers that aggregate many
+series — calling `get_constraints` or `get_data` on them causes timeouts (180s+).
+
+If only a generic ID appears in the results, run `discover_dataflows` again with more specific keywords
+to surface the concrete `_DF_` variant before proceeding.
+
+#### Granularity signals in dataflow names
+
+The dataflow name often contains a suffix that reveals its territorial granularity.
+**Read this before selecting a dataflow** — high-granularity dataflows will almost always
+timeout when queried at national level.
+
+| Name suffix | Granularity | Timeout risk |
+|---|---|---|
+| `- comuni` | Municipality-level | Very high — avoid for national queries |
+| `- prov.` or `- province` | Province-level | High — use only when provincial detail is needed |
+| `- reg.` or `- regioni` | Regional-level | Medium — acceptable for regional breakdowns |
+| `Italia, regioni, province` | Multi-level (includes national) | Low — safe for national queries |
+| *(no suffix)* | Usually national | Low |
+
+**Rule:** if the user asks for national or aggregate data, always prefer a dataflow whose name
+contains "Italia" or has no territorial suffix over one ending in "- comuni" or "- prov.".
+When both options appear in `discover_dataflows` results, pick the less granular one first.
+
 ### Step 2 — `get_constraints`
 
 **Always verify** the data is available with the desired cut before fetching.
