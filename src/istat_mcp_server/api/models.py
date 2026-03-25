@@ -184,7 +184,7 @@ class ConstraintsSummaryOutput(BaseModel):
 
     id_dataflow: str
     note: str = 'Use search_constraint_values to look up codes for any dimension.'
-    dimensions: list['DimensionConstraintSummary | TimeConstraintOutput'] = []
+    dimensions: list[DimensionConstraintSummary | TimeConstraintOutput] = []
 
 
 class SearchConstraintValuesInput(BaseModel):
