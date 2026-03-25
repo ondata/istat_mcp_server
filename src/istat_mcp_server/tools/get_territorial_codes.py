@@ -42,7 +42,7 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
         logger.info(f'get_territorial_codes: name search="{name}"')
         name_lower = name.lower()
         rows = [
-            {'code': r['code'], 'name_it': r['name_it'], 'level': r['level']}
+            _row_to_dict(r, include_level=True)
             for r in table.to_pylist()
             if name_lower in r['name_it'].lower()
         ]
@@ -55,9 +55,22 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
 
     logger.info(f'get_territorial_codes: level={level}')
     rows = [
-        {'code': r['code'], 'name_it': r['name_it']}
+        _row_to_dict(r)
         for r in table.to_pylist()
         if r['level'] == level
     ]
 
     return format_json_response({'level': level, 'codes': rows})
+
+
+def _row_to_dict(r: dict, include_level: bool = False) -> dict:
+    """Build a result dict from a parquet row, adding capoluogo fields for comuni."""
+    result: dict = {'code': r['code'], 'name_it': r['name_it']}
+    if include_level:
+        result['level'] = r['level']
+    if r.get('level') == 'comune':
+        if r.get('capoluogo_provincia') is not None:
+            result['capoluogo_provincia'] = r['capoluogo_provincia']
+        if r.get('capoluogo_regione') is not None:
+            result['capoluogo_regione'] = r['capoluogo_regione']
+    return result

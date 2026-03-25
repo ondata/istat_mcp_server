@@ -3,6 +3,7 @@
 Sources:
 - CL_ITTER107: fetched via mcp__istat__get_codelist_description (cached in cache/cache.db)
 - ISTAT municipalities CSV: https://www.istat.it/storage/codici-unita-amministrative/Elenco-comuni-italiani.csv
+- ISTAT capoluogo JSON: https://situas-servizi.istat.it/publish/reportspooljson?pfun=61&pdata=01/01/2048
 
 Output columns:
 - code: ISTAT territorial code (CL_ITTER107 for all levels; 6-digit numeric for comuni)
@@ -10,6 +11,8 @@ Output columns:
 - level: italia | ripartizione | regione | provincia | comune
 - nuts_level: 0 | 1 | 2 | 3 | 4
 - parent_code: code of the parent territorial unit (NULL for Italia)
+- capoluogo_provincia: True if the comune is a provincial/UTS capital (NULL for non-comuni)
+- capoluogo_regione: True if the comune is a regional capital (NULL for non-comuni)
 
 Usage:
     python3 resources/build_territorial_subdivisions.py [path_to_itter107_json] [path_to_comuni_csv]
@@ -53,6 +56,7 @@ IT1XX_PARENTS = {
 }
 
 COMUNI_CSV_URL = 'https://www.istat.it/storage/codici-unita-amministrative/Elenco-comuni-italiani.csv'
+CAPOLUOGO_JSON_URL = 'https://situas-servizi.istat.it/publish/reportspooljson?pfun=61&pdata=01/01/2048'
 
 OUTPUT_PATH = Path(__file__).parent / 'territorial_subdivisions.parquet'
 
@@ -97,6 +101,24 @@ def download_comuni_csv() -> str:
     return utf8_path
 
 
+def download_capoluogo_json() -> dict[str, tuple[bool, bool]]:
+    """Download capoluogo flags from ISTAT JSON endpoint.
+
+    Returns:
+        Dict mapping 6-digit comune code -> (capoluogo_provincia, capoluogo_regione)
+    """
+    print(f'Downloading {CAPOLUOGO_JSON_URL}...')
+    with urllib.request.urlopen(CAPOLUOGO_JSON_URL) as resp:
+        data = json.loads(resp.read().decode('utf-8'))
+    result = {}
+    for rec in data.get('resultset', []):
+        code = str(rec.get('PRO_COM_T', '')).strip().zfill(6)
+        if code:
+            result[code] = (bool(rec.get('CC_UTS', 0)), bool(rec.get('CC_REG', 0)))
+    print(f'  Loaded capoluogo flags for {len(result)} comuni')
+    return result
+
+
 def build_comuni_mappings(csv_path: str) -> tuple[dict, dict]:
     """Build comune_code->ITTER_nuts3 and storico->ITTER_nuts3 mappings."""
     comune_to_nuts3 = {}
@@ -117,7 +139,7 @@ def build_comuni_mappings(csv_path: str) -> tuple[dict, dict]:
     return comune_to_nuts3, storico_to_nuts3
 
 
-def build_parquet(codes: dict, comune_to_nuts3: dict, storico_to_nuts3: dict) -> None:
+def build_parquet(codes: dict, comune_to_nuts3: dict, storico_to_nuts3: dict, capoluogo: dict[str, tuple[bool, bool]] | None = None) -> None:
     """Build and write the Parquet file."""
     # Province: standard NUTS3 + letter-suffix + IT1XX
     nuts3_codes = {k: v for k, v in codes.items() if re.match(r'^IT[A-Z][0-9]{2}$', k)}
@@ -127,18 +149,18 @@ def build_parquet(codes: dict, comune_to_nuts3: dict, storico_to_nuts3: dict) ->
 
     rows = []
 
-    rows.append(('IT', 'Italia', 'italia', 0, None))
+    rows.append(('IT', 'Italia', 'italia', 0, None, None, None))
 
     for k, v in {'ITC': 'Nord-ovest', 'ITD': 'Nord-est', 'ITE': 'Centro', 'ITF': 'Sud', 'ITG': 'Isole'}.items():
-        rows.append((k, v, 'ripartizione', 1, 'IT'))
+        rows.append((k, v, 'ripartizione', 1, 'IT', None, None))
 
     for k, v in codes.items():
         if re.match(r'^IT[A-Z][0-9]$', k):
-            rows.append((k, v, 'regione', 2, k[:3]))
+            rows.append((k, v, 'regione', 2, k[:3], None, None))
 
     for k, v in all_province_codes.items():
         parent = IT1XX_PARENTS.get(k, k[:4])
-        rows.append((k, v, 'provincia', 3, parent))
+        rows.append((k, v, 'provincia', 3, parent, None, None))
 
     no_parent = 0
     for k, v in codes.items():
@@ -146,15 +168,18 @@ def build_parquet(codes: dict, comune_to_nuts3: dict, storico_to_nuts3: dict) ->
             parent = comune_to_nuts3.get(k) or storico_to_nuts3.get(k[:3])
             if not parent:
                 no_parent += 1
-            rows.append((k, v, 'comune', 4, parent))
+            cap_prov, cap_reg = capoluogo.get(k, (False, False)) if capoluogo else (False, False)
+            rows.append((k, v, 'comune', 4, parent, cap_prov, cap_reg))
 
-    codes_col, names_col, levels_col, nuts_col, parent_col = zip(*rows)
+    codes_col, names_col, levels_col, nuts_col, parent_col, cap_prov_col, cap_reg_col = zip(*rows)
     table = pa.table({
         'code': pa.array(codes_col, type=pa.string()),
         'name_it': pa.array(names_col, type=pa.string()),
         'level': pa.array(levels_col, type=pa.string()),
         'nuts_level': pa.array(nuts_col, type=pa.int8()),
         'parent_code': pa.array(parent_col, type=pa.string()),
+        'capoluogo_provincia': pa.array(cap_prov_col, type=pa.bool_()),
+        'capoluogo_regione': pa.array(cap_reg_col, type=pa.bool_()),
     })
     pq.write_table(table, str(OUTPUT_PATH), compression='zstd')
 
@@ -193,5 +218,8 @@ if __name__ == '__main__':
     comune_to_nuts3, storico_to_nuts3 = build_comuni_mappings(comuni_csv_path)
     print(f'  comuni: {len(comune_to_nuts3)} | storico: {len(storico_to_nuts3)}')
 
+    print('Downloading capoluogo flags...')
+    capoluogo = download_capoluogo_json()
+
     print('Building Parquet...')
-    build_parquet(codes, comune_to_nuts3, storico_to_nuts3)
+    build_parquet(codes, comune_to_nuts3, storico_to_nuts3, capoluogo)

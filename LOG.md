@@ -2,6 +2,7 @@
 
 ## 2026-03-25
 
+- feat: `territorial_subdivisions.parquet` — aggiunti campi `capoluogo_provincia` e `capoluogo_regione` (bool) per i comuni; fonte: `situas-servizi.istat.it/publish/reportspooljson?pfun=61`; `get_territorial_codes` ora li espone nella risposta
 - fix: `client.py` — HTTP 404 con body "NoRecordsFound" ora restituisce messaggio chiaro invece di "API error 404" generico; ISTAT usa 404 per "nessun record trovato", non solo per endpoint mancanti
 - fix: `get_data` ignorava tutti i `dimension_filters` — `_extract_constraints_info` leggeva chiave `'constraints'` invece di `'dimensions'` nel JSON di `get_constraints`; l'URL produceva sempre `ALL`
 - docs: aggiunta nota in skill `istat-mcp`: `search_constraint_values` mostra codici disponibili nell'intero dataflow, non per combinazioni specifiche — un codice può restituire 0 record se combinato con certi valori di altre dimensioni
