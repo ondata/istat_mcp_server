@@ -131,14 +131,19 @@ def create_server() -> Server:
             ),
             Tool(
                 name='get_constraints',
-                description='Get available constraints (dimension values) for a dataflow with descriptions. Returns all valid values for each dimension.',
+                description='Get available constraints (dimension values) for a dataflow with descriptions. Returns valid values for each dimension. Use the optional `dimensions` parameter to fetch only the dimensions you need (e.g., ["AGE", "SEX"]) — this avoids unnecessary API calls for irrelevant dimensions.',
                 inputSchema={
                     'type': 'object',
                     'properties': {
                         'dataflow_id': {
                             'type': 'string',
                             'description': "Dataflow ID (e.g., '101_1015_DF_DCSP_COLTIVAZIONI_1')",
-                        }
+                        },
+                        'dimensions': {
+                            'type': 'array',
+                            'items': {'type': 'string'},
+                            'description': "Optional list of dimension IDs to fetch (e.g., ['AGE', 'SEX']). If omitted, all dimensions are returned.",
+                        },
                     },
                     'required': ['dataflow_id'],
                 },

@@ -37,6 +37,10 @@ class GetConstraintsInput(BaseModel):
         validation_alias=AliasChoices('dataflow_id', 'id_dataflow'),
         description="Dataflow ID to analyze (e.g., '101_1015_DF_DCSP_COLTIVAZIONI_1')",
     )
+    dimensions: list[str] | None = Field(
+        default=None,
+        description="Optional list of dimension IDs to fetch (e.g., ['AGE', 'SEX']). If omitted, all dimensions are returned.",
+    )
 
 
 class GetCodelistDescriptionInput(BaseModel):

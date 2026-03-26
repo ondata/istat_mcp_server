@@ -69,6 +69,7 @@ async def handle_get_constraints(
     # Validate input
     params = GetConstraintsInput.model_validate(arguments)
     dataflow_id = params.dataflow_id
+    dimensions_filter = {d.upper() for d in params.dimensions} if params.dimensions else None
 
     if not validate_dataflow_id(dataflow_id):
         return [
@@ -120,6 +121,10 @@ async def handle_get_constraints(
 
     for constraint_dim in constraints.dimensions:
         dimension_id = constraint_dim.dimension
+
+        # Skip dimensions not in the filter (if a filter was specified)
+        if dimensions_filter and dimension_id not in dimensions_filter:
+            continue
 
         # Check if this is TIME_PERIOD
         if (

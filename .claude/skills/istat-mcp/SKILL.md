@@ -86,7 +86,15 @@ When both options appear in `discover_dataflows` results, pick the less granular
 Returns a **compact summary**: for each dimension, the codelist ID and the number of available values,
 plus the time range. Full values are cached server-side.
 
+**Always pass only the dimensions you actually need** via the `dimensions` parameter — fetching all
+dimensions on complex dataflows often causes timeouts (180s+). In practice you rarely need more than
+2–3 dimensions at this stage.
+
 ```
+# Fetch only the dimensions you care about (recommended)
+get_constraints(dataflow_id="151_914_DF_DCCV_TAXDISOCCU1_7", dimensions=["REF_AREA", "SEX", "AGE"])
+
+# Fetch all dimensions — use only for simple/small dataflows
 get_constraints(dataflow_id="151_914_DF_DCCV_TAXDISOCCU1_7")
 ```
 
