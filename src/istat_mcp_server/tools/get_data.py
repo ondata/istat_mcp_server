@@ -118,6 +118,70 @@ def parse_sdmx_to_table(xml_content: str, dataflow_full_id: str) -> str:
     return '\n'.join(output_lines)
 
 
+def filter_tsv_by_time_period(tsv_data: str, start_period: str | None, end_period: str | None) -> str:
+    """Filter TSV rows by TIME_PERIOD range (workaround for ISTAT endPeriod+1 bug).
+
+    The ISTAT SDMX API returns one extra year beyond the requested endPeriod.
+    This function filters out rows whose TIME_PERIOD falls outside the requested range.
+
+    Args:
+        tsv_data: TSV string with header row
+        start_period: Requested start period (e.g. '2024' or '2024-01-01')
+        end_period: Requested end period (e.g. '2024' or '2024-12-31')
+
+    Returns:
+        Filtered TSV string
+    """
+    if not start_period and not end_period:
+        return tsv_data
+
+    lines = tsv_data.split('\n')
+    if not lines:
+        return tsv_data
+
+    header = lines[0].split('\t')
+    if 'TIME_PERIOD' not in header:
+        return tsv_data
+
+    tp_idx = header.index('TIME_PERIOD')
+
+    # Extract year as int for comparison
+    def extract_year(period_str: str) -> int | None:
+        try:
+            return int(period_str.split('-')[0][:4])
+        except (ValueError, IndexError):
+            return None
+
+    start_year = extract_year(start_period) if start_period else None
+    end_year = extract_year(end_period) if end_period else None
+
+    filtered = [lines[0]]
+    removed = 0
+    for line in lines[1:]:
+        if not line:
+            continue
+        parts = line.split('\t')
+        if len(parts) <= tp_idx:
+            filtered.append(line)
+            continue
+        row_year = extract_year(parts[tp_idx])
+        if row_year is None:
+            filtered.append(line)
+            continue
+        if start_year and row_year < start_year:
+            removed += 1
+            continue
+        if end_year and row_year > end_year:
+            removed += 1
+            continue
+        filtered.append(line)
+
+    if removed:
+        logger.info(f'filter_tsv_by_time_period: removed {removed} rows outside [{start_period}, {end_period}]')
+
+    return '\n'.join(filtered)
+
+
 def filter_tsv_by_dimensions(tsv_data: str, dimension_filters: dict[str, list[str]]) -> str:
     """Filter TSV rows by dimension values (client-side, post-API).
 
@@ -387,6 +451,9 @@ async def handle_get_data(
     # Step 8: Apply dimension filters client-side (API may not honor all filters)
     if params.dimension_filters:
         table_data = filter_tsv_by_dimensions(table_data, params.dimension_filters)
+
+    # Step 8b: Filter by TIME_PERIOD (workaround for ISTAT endPeriod+1 bug)
+    table_data = filter_tsv_by_time_period(table_data, start_period, end_period)
 
     # Step 9: Append curl command and query explanation
     curl_info = _build_curl_info(
