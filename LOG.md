@@ -1,5 +1,12 @@
 # LOG
 
+## 2026-03-26
+
+- perf: `get_constraints` — strategia ibrida per evitare timeout su dataflow grandi (es. `DCIS_POPSTRRES1`: 119 miliardi di combinazioni teoriche, `availableconstraint/all/all` impiegava 325s):
+  - se `dimensions` specificato → key filtering SDMX con safe defaults (FREQ=A, REF_AREA=IT, SEX=9) per le dimensioni non richieste (~2.4s, restituisce valori reali); fallback a codelists se la risposta è vuota
+  - se no `dimensions` → cardinality check (prodotto cardinalità codelists): se > 1M usa codelists direttamente, altrimenti `availableconstraint` standard
+  - modificati: `client.py` (param `key` in `fetch_constraints`), `tool_helpers.py` (aggiunto `get_cached_constraints_keyed`), `get_constraints.py` (logica ibrida)
+
 ## 2026-03-25
 
 - feat: `get_territorial_codes` — nuovi filtri `region`, `province`, `capoluogo` (es. "capoluogo della Lombardia")

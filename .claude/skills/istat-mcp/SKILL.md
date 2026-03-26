@@ -51,6 +51,31 @@ data doesn't exist. Strategies to try, in order:
 Only after 2–3 failed `discover_dataflows` attempts with diverse keywords should you conclude
 that the data is not available in this MCP server and suggest alternative sources.
 
+#### Use technical prefixes as first keyword
+
+ISTAT dataflow IDs follow a naming convention based on thematic prefixes. **Always start with a technical prefix keyword** rather than a generic description — this hits the keyword search directly and avoids multiple fallback attempts.
+
+| Thematic area | Prefix | Example topic |
+|---|---|---|
+| Demographic / population structure | `DCIS_` | `DCIS_POPSTRRES` (resident pop.), `DCIS_INDDEMOG` (demographic indicators) |
+| Living conditions / labour / poverty | `DCCV_` | `DCCV_TAXDISOCCU` (unemployment), `DCCV_FORZLVDE` (labour force) |
+| Agricultural / industrial production | `DCSP_` | crop yields, livestock, industrial output |
+| National accounts | `DCCN_` | GDP, value added, quarterly population |
+| Health / vital statistics | `DCIS_` | `DCIS_MORTALITA` (mortality), `DCIS_NATM` (births) |
+
+**Rule:** map the user's topic to the most likely prefix, then combine it with a specific term:
+
+```
+# User asks about adult population → demographic → DCIS_ + POPSTRRES
+discover_dataflows(keywords="DCIS_POPSTRRES")
+
+# User asks about unemployment → living conditions → DCCV_ + TAXDISOCCU
+discover_dataflows(keywords="DCCV_TAXDISOCCU")
+```
+
+If you don't know the exact suffix, use just the prefix + a key noun (e.g., `DCIS_POP`, `DCCV_DISOC`).
+Only fall back to generic Italian/English descriptions if the technical prefix approach yields no results.
+
 #### Generic vs specific dataflow IDs
 
 `discover_dataflows` may return both a **generic ID** (e.g., `29_317`) and one or more **specific IDs**
@@ -90,19 +115,26 @@ plus the time range. Full values are cached server-side.
 dimensions on complex dataflows often causes timeouts (180s+). In practice you rarely need more than
 2–3 dimensions at this stage.
 
-```
-# Fetch only the dimensions you care about (recommended)
-get_constraints(dataflow_id="151_914_DF_DCCV_TAXDISOCCU1_7", dimensions=["REF_AREA", "SEX", "AGE"])
+**Do NOT include dimensions for which you already have a default value** — there is no need to verify
+them. Specifically:
+- **Never include `SEX`** unless the user asked for a breakdown by sex. Default is `9` (total) — apply it directly in `get_data`.
+- **Never include `FREQ`** unless the user asked for a specific frequency. Default is `A` (annual) — apply it directly in `get_data`.
+- **Never include `TIME_PERIOD`** unless you need to verify coverage. If the user didn't specify a date, apply the default period directly in `get_data` (previous calendar year).
 
-# Fetch all dimensions — use only for simple/small dataflows
-get_constraints(dataflow_id="151_914_DF_DCCV_TAXDISOCCU1_7")
+Only request constraints for dimensions whose codes you genuinely need to discover — typically `AGE`
+(when filtering by age) and `REF_AREA` (when filtering by territory other than Italy).
+
+```
+# User asks: "quanti maggiorenni in Italia?" → only need AGE codes
+get_constraints(dataflow_id="29_7_DF_DCIS_POPSTRRES1_1", dimensions=["AGE"])
+
+# User asks: "disoccupazione per regione" → need REF_AREA codes
+get_constraints(dataflow_id="151_914_DF_DCCV_TAXDISOCCU1_7", dimensions=["REF_AREA"])
 ```
 
 What to check:
 - **REF_AREA**: is the value_count > 0? Do you need specific territory codes?
-- **TIME_PERIOD**: does the series cover the period the user needs?
-- **Dimension values**: for dimensions with few values (SEX, FREQ, AGE), use `search_constraint_values`
-  to retrieve the actual codes.
+- **AGE**: what age group codes are available? (needed when filtering by age)
 
 If the desired cut is not available, go back to Step 1 and try a different dataflow.
 

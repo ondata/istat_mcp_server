@@ -353,11 +353,14 @@ class ApiClient:
         logger.info(f'Fetched datastructure {id_datastructure} with {len(dimensions)} dimensions')
         return DatastructureInfo(id_datastructure=id_datastructure, dimensions=dimensions)
 
-    async def fetch_constraints(self, dataflow_id: str) -> ConstraintInfo:
+    async def fetch_constraints(self, dataflow_id: str, key: str = 'all') -> ConstraintInfo:
         """Fetch available constraints for a dataflow using JSON format.
 
         Args:
             dataflow_id: Dataflow ID
+            key: SDMX key to filter combinations (default 'all').
+                 Use dimension values like 'A.IT...' to fix specific dimensions
+                 and reduce server-side computation.
 
         Returns:
             ConstraintInfo object
@@ -366,7 +369,7 @@ class ApiClient:
             ApiError: On API errors
         """
         data = await self._get_json(
-            f'/availableconstraint/{dataflow_id}/all/all',
+            f'/availableconstraint/{dataflow_id}/{key}/all',
             params={'mode': 'available'},
             timeout=self._availableconstraint_timeout,
         )
