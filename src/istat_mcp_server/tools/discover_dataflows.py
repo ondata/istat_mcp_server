@@ -91,14 +91,15 @@ async def handle_discover_dataflows(
             kw_results = _keyword_search(dataflows, keywords, limit=candidates)
 
             logger.info(f'Semantic: {len(sem_results)}, keyword: {len(kw_results)}')
-            md = _format_markdown(query, sem_results, kw_results)
-            return [TextContent(type='text', text=md)]
-
         else:
             # Fallback: string matching only
             logger.info('sentence-transformers not installed, falling back to keyword matching')
-            dataflows = _keyword_search(dataflows, keywords, limit=max_results)
-            logger.info(f'Filtered to {len(dataflows)} dataflows')
+            sem_results = []
+            kw_results = _keyword_search(dataflows, keywords, limit=max_results)
+            logger.info(f'Keyword results: {len(kw_results)}')
+
+        md = _format_markdown(query, sem_results, kw_results)
+        return [TextContent(type='text', text=md)]
 
     response = {
         'count': len(dataflows),
