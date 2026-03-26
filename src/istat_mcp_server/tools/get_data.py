@@ -2,8 +2,10 @@
 
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlencode
 
 from lxml import etree
 from mcp.types import TextContent
@@ -116,6 +118,52 @@ def parse_sdmx_to_table(xml_content: str, dataflow_full_id: str) -> str:
     return '\n'.join(output_lines)
 
 
+def filter_tsv_by_dimensions(tsv_data: str, dimension_filters: dict[str, list[str]]) -> str:
+    """Filter TSV rows by dimension values (client-side, post-API).
+
+    Args:
+        tsv_data: TSV string with header row
+        dimension_filters: dict of dimension_id -> list of allowed codes
+
+    Returns:
+        Filtered TSV string
+    """
+    if not dimension_filters:
+        return tsv_data
+
+    lines = tsv_data.split('\n')
+    if not lines:
+        return tsv_data
+
+    header = lines[0].split('\t')
+    # Build index map for dimensions we need to filter
+    col_index: dict[str, int] = {}
+    for dim, values in dimension_filters.items():
+        if values and dim in header:
+            col_index[dim] = header.index(dim)
+
+    if not col_index:
+        return tsv_data
+
+    # Precompute allowed values as sets for efficient membership checks
+    allowed_values: dict[str, set[str]] = {
+        dim: set(dimension_filters[dim]) for dim in col_index
+    }
+
+    filtered = [lines[0]]
+    for line in lines[1:]:
+        if not line:
+            continue
+        parts = line.split('\t')
+        if all(
+            len(parts) > idx and parts[idx] in allowed_values[dim]
+            for dim, idx in col_index.items()
+        ):
+            filtered.append(line)
+
+    return '\n'.join(filtered)
+
+
 def _extract_constraints_info(constraints_data: dict[str, Any]) -> tuple[list[str], str | None, str | None]:
     """Extract dimension order and TIME_PERIOD info from constraints JSON.
     
@@ -129,7 +177,7 @@ def _extract_constraints_info(constraints_data: dict[str, Any]) -> tuple[list[st
     time_period_start = None
     time_period_end = None
 
-    for constraint in constraints_data.get('constraints', []):
+    for constraint in constraints_data.get('dimensions', []):
         dimension_id = constraint.get('dimension', '')
         
         if dimension_id == 'TIME_PERIOD':
@@ -166,6 +214,65 @@ def _determine_default_periods(time_period_end: str | None) -> tuple[str, str]:
     current_year = datetime.now().year - 1
     logger.info(f'get_data: No TIME_PERIOD info, using fallback year: {current_year}')
     return str(current_year), str(current_year)
+
+
+API_BASE_URL = os.getenv('API_BASE_URL', 'https://esploradati.istat.it/SDMXWS/rest')
+
+
+def _build_curl_info(
+    dataflow_id: str,
+    dimension_order: list[str],
+    ordered_dimension_filters: list[list[str]],
+    start_period: str | None,
+    end_period: str | None,
+    detail: str,
+) -> str:
+    """Build a curl command and query explanation for the user.
+
+    Returns:
+        Markdown string with URL, curl command, and filter explanation.
+    """
+    # Build dimension path (same logic as fetch_data)
+    dim_path = '.'.join(
+        '+'.join(f) if f else '' for f in ordered_dimension_filters
+    ) if ordered_dimension_filters else ''
+
+    base_path = f'{API_BASE_URL}/data/{dataflow_id}/{dim_path}/ALL/' if dim_path else f'{API_BASE_URL}/data/{dataflow_id}/ALL/'
+
+    # Build query params
+    qp: dict[str, str] = {'detail': detail}
+    if start_period:
+        qp['startPeriod'] = start_period
+    if end_period:
+        qp['endPeriod'] = end_period
+
+    url = f'{base_path}?{urlencode(qp)}'
+
+    # Build filter explanation table
+    filter_rows = []
+    for dim, filters in zip(dimension_order, ordered_dimension_filters):
+        value_str = '+'.join(filters) if filters else '(tutti i valori)'
+        filter_rows.append(f'  - `{dim}`: `{value_str}`')
+    filters_md = '\n'.join(filter_rows) if filter_rows else '  - (nessun filtro)'
+
+    curl_cmd = (
+        f'curl -H "Accept: application/vnd.sdmx.data+csv;version=1.0.0" \\\n'
+        f'  "{url}"'
+    )
+
+    return (
+        '\n\n---\n'
+        '## Come riprodurre questa query\n\n'
+        f'**URL SDMX:**\n```\n{url}\n```\n\n'
+        f'**cURL per scaricare i dati in CSV:**\n```bash\n{curl_cmd}\n```\n\n'
+        '**Come è costruita la query:**\n'
+        f'- Dataflow: `{dataflow_id}`\n'
+        f'- Filtri per dimensione (nell\'ordine della struttura dati):\n{filters_md}\n'
+        f'- Periodo: `{start_period or "n/d"}` → `{end_period or "n/d"}`\n'
+        f'- Formato risposta API: XML SDMX (il server converte in tabella); per CSV usa il curl sopra\n'
+        '\n> Le dimensioni nel percorso URL seguono l\'ordine fisso della struttura dati SDMX. '
+        'I valori multipli per la stessa dimensione si separano con `+`.'
+    )
 
 
 @handle_tool_errors
@@ -276,5 +383,19 @@ async def handle_get_data(
 
     # Step 7: Parse XML to table format
     table_data = parse_sdmx_to_table(data_xml, dataflow_full_id)
-    
-    return [TextContent(type='text', text=table_data)]
+
+    # Step 8: Apply dimension filters client-side (API may not honor all filters)
+    if params.dimension_filters:
+        table_data = filter_tsv_by_dimensions(table_data, params.dimension_filters)
+
+    # Step 9: Append curl command and query explanation
+    curl_info = _build_curl_info(
+        dataflow_id=params.id_dataflow,
+        dimension_order=dimension_order,
+        ordered_dimension_filters=ordered_dimension_filters,
+        start_period=start_period,
+        end_period=end_period,
+        detail=params.detail,
+    )
+
+    return [TextContent(type='text', text=table_data + curl_info)]

@@ -8,7 +8,11 @@ from mcp.types import TextContent
 from ..api.client import ApiClient
 from ..api.models import (
     CodeValue,
-    ConstraintsOutput,
+    ConstraintInfo,
+    ConstraintValue,
+    ConstraintsSummaryOutput,
+    DimensionConstraint,
+    DimensionConstraintSummary,
     DimensionConstraintWithDescriptions,
     GetConstraintsInput,
     TimeConstraintOutput,
@@ -21,6 +25,7 @@ from ..utils.tool_helpers import (
     format_json_response,
     get_cached_codelist,
     get_cached_constraints,
+    get_cached_constraints_keyed,
     get_cached_dataflows,
     get_cached_datastructure,
     handle_tool_errors,
@@ -68,6 +73,7 @@ async def handle_get_constraints(
     # Validate input
     params = GetConstraintsInput.model_validate(arguments)
     dataflow_id = params.dataflow_id
+    dimensions_filter = {d.upper() for d in params.dimensions} if params.dimensions else None
 
     if not validate_dataflow_id(dataflow_id):
         return [
@@ -92,25 +98,95 @@ async def handle_get_constraints(
     id_datastructure = dataflow_info.id_datastructure
     logger.info(f'Found datastructure: {id_datastructure}')
 
-    # Step 2: Fetch constraints (available values for each dimension)
-    # This returns only the values that are actually available for this dataflow
-    logger.info(f'Getting constraints (checks cache first, then API if needed)')
-    constraints = await get_cached_constraints(cache, api, dataflow_id)
-
-    # Step 3: Call get_structure internally to get dimension-codelist mapping
-    # This is equivalent to calling the get_structure tool
+    # Step 2: Fetch datastructure to get dimension-codelist mapping
     logger.info(f'Getting datastructure (checks cache first, then API if needed)')
-    datastructure = await get_cached_datastructure(
-        cache,
-        api,
-        id_datastructure,
-    )
+    datastructure = await get_cached_datastructure(cache, api, id_datastructure)
 
-    # Build dimension -> codelist mapping from datastructure
     dim_to_codelist = {
         dim.dimension: dim.codelist for dim in datastructure.dimensions
     }
     logger.info(f'Mapped {len(dim_to_codelist)} dimensions to codelists')
+
+    # Step 3: Choose strategy.
+    #
+    # - dimensions specified → key filtering: fix safe defaults for non-requested
+    #   dims and call availableconstraint with a partial key (~2s).
+    #   Fallback to codelists if key filtering returns nothing (safe defaults
+    #   not valid for this dataflow).
+    #
+    # - no dimensions filter → cardinality check: fetch all codelists, compute
+    #   the product of their sizes. If > threshold use codelists directly
+    #   (avoids the 300s+ availableconstraint timeout on large dataflows).
+
+    _SAFE_DEFAULTS = {'FREQ': 'A', 'REF_AREA': 'IT', 'SEX': '9'}
+    _COMPLEXITY_THRESHOLD = 1_000_000
+
+    if dimensions_filter:
+        # Key filtering path
+        key_parts = [
+            _SAFE_DEFAULTS.get(dim.dimension, '')
+            if dim.dimension not in dimensions_filter
+            else ''
+            for dim in datastructure.dimensions
+        ]
+        key = '.'.join(key_parts)
+        logger.info(f'Key filtering: key={key!r}, requested={dimensions_filter}')
+        constraints = await get_cached_constraints_keyed(cache, api, dataflow_id, key)
+
+        if not constraints.dimensions:
+            # Safe defaults not valid for this dataflow — fall back to codelists
+            logger.warning(
+                f'Key filtering returned empty for {dataflow_id}, falling back to codelists'
+            )
+            for dim in datastructure.dimensions:
+                if dim.codelist and dim.dimension in dimensions_filter:
+                    await get_cached_codelist(cache, api, dim.codelist)
+            # Build constraints from codelists for requested dimensions only
+            dim_constraints_fb: list[DimensionConstraint] = []
+            for dim in datastructure.dimensions:
+                if not dim.codelist or dim.dimension not in dimensions_filter:
+                    continue
+                cl = await get_cached_codelist(cache, api, dim.codelist)
+                vals_fb: list[ConstraintValue | TimeConstraintValue] = [
+                    ConstraintValue(value=cv.code) for cv in cl.values
+                ]
+                dim_constraints_fb.append(
+                    DimensionConstraint(dimension=dim.dimension, values=vals_fb)
+                )
+            constraints = ConstraintInfo(id=dataflow_id, dimensions=dim_constraints_fb)
+    else:
+        # Cardinality check path
+        cardinality = 1
+        codelists_by_id: dict[str, Any] = {}
+        for dim in datastructure.dimensions:
+            if dim.codelist:
+                cl = await get_cached_codelist(cache, api, dim.codelist)
+                codelists_by_id[dim.codelist] = cl
+                cardinality *= len(cl.values)
+
+        logger.info(f'Theoretical cardinality for {dataflow_id}: {cardinality:,}')
+
+        if cardinality > _COMPLEXITY_THRESHOLD:
+            logger.info(
+                f'Cardinality {cardinality:,} > {_COMPLEXITY_THRESHOLD:,}: using codelist path'
+            )
+            dim_constraints_cl: list[DimensionConstraint] = []
+            for dim in datastructure.dimensions:
+                if not dim.codelist or dim.codelist not in codelists_by_id:
+                    continue
+                vals_cl: list[ConstraintValue | TimeConstraintValue] = [
+                    ConstraintValue(value=cv.code)
+                    for cv in codelists_by_id[dim.codelist].values
+                ]
+                dim_constraints_cl.append(
+                    DimensionConstraint(dimension=dim.dimension, values=vals_cl)
+                )
+            constraints = ConstraintInfo(id=dataflow_id, dimensions=dim_constraints_cl)
+        else:
+            logger.info(
+                f'Cardinality {cardinality:,} <= {_COMPLEXITY_THRESHOLD:,}: using availableconstraint'
+            )
+            constraints = await get_cached_constraints(cache, api, dataflow_id)
 
     # Step 4: Build output with descriptions
     output_constraints: list[
@@ -119,6 +195,10 @@ async def handle_get_constraints(
 
     for constraint_dim in constraints.dimensions:
         dimension_id = constraint_dim.dimension
+
+        # Skip dimensions not in the filter (if a filter was specified)
+        if dimensions_filter and dimension_id not in dimensions_filter:
+            continue
 
         # Check if this is TIME_PERIOD
         if (
@@ -194,9 +274,22 @@ async def handle_get_constraints(
         f'with {len(output_constraints)} dimensions (all cached for 1 month)'
     )
 
-    # Build final output
-    output = ConstraintsOutput(
-        id_dataflow=dataflow_id, constraints=output_constraints
+    # Build compact summary — full values stay in cache, queryable via search_constraint_values
+    summary_dims = []
+    for dim in output_constraints:
+        if isinstance(dim, TimeConstraintOutput):
+            summary_dims.append(dim)
+        else:
+            summary_dims.append(
+                DimensionConstraintSummary(
+                    dimension=dim.dimension,
+                    codelist=dim.codelist,
+                    value_count=len(dim.values),
+                )
+            )
+
+    output = ConstraintsSummaryOutput(
+        id_dataflow=dataflow_id, dimensions=summary_dims
     )
 
     return format_json_response(output)

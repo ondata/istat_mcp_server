@@ -13,6 +13,12 @@ class DiscoverDataflowsInput(BaseModel):
         '',
         description="Comma-separated keywords (e.g., 'population,employment'). Leave empty to return all dataflows.",
     )
+    max_results: int = Field(
+        10,
+        description='Maximum number of results when semantic search is active (ignored when no keywords).',
+        ge=1,
+        le=100,
+    )
 
 
 class GetStructureInput(BaseModel):
@@ -30,6 +36,10 @@ class GetConstraintsInput(BaseModel):
         ...,
         validation_alias=AliasChoices('dataflow_id', 'id_dataflow'),
         description="Dataflow ID to analyze (e.g., '101_1015_DF_DCSP_COLTIVAZIONI_1')",
+    )
+    dimensions: list[str] | None = Field(
+        default=None,
+        description="Optional list of dimension IDs to fetch (e.g., ['AGE', 'SEX']). If omitted, all dimensions are returned.",
     )
 
 
@@ -163,6 +173,40 @@ class ConstraintsOutput(BaseModel):
 
     id_dataflow: str
     constraints: list[DimensionConstraintWithDescriptions | TimeConstraintOutput] = []
+
+
+class DimensionConstraintSummary(BaseModel):
+    """Compact summary of dimension constraints (count only, no values)."""
+
+    dimension: str
+    codelist: str
+    value_count: int
+
+
+class ConstraintsSummaryOutput(BaseModel):
+    """Compact constraints summary for a dataflow."""
+
+    id_dataflow: str
+    note: str = 'Use search_constraint_values to look up codes for any dimension.'
+    dimensions: list[DimensionConstraintSummary | TimeConstraintOutput] = []
+
+
+class SearchConstraintValuesInput(BaseModel):
+    """Input for search_constraint_values tool."""
+
+    dataflow_id: str = Field(
+        ...,
+        validation_alias=AliasChoices('dataflow_id', 'id_dataflow'),
+        description="Dataflow ID (e.g., '41_983_DF_DCIS_INCIDMORFER_COM_1')",
+    )
+    dimension: str = Field(
+        ...,
+        description="Dimension ID to search (e.g., 'REF_AREA', 'SEX')",
+    )
+    search: str | None = Field(
+        None,
+        description='Optional substring to filter by code or description (case-insensitive)',
+    )
 
 
 class ConceptInfo(BaseModel):

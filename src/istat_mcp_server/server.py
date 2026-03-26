@@ -22,6 +22,8 @@ from .tools import (
     handle_get_constraints,
     handle_get_data,
     handle_get_structure,
+    handle_get_territorial_codes,
+    handle_search_constraint_values,
 )
 from .utils.tool_helpers import configure_cache_ttls
 from .utils.logging import setup_logging
@@ -129,14 +131,19 @@ def create_server() -> Server:
             ),
             Tool(
                 name='get_constraints',
-                description='Get available constraints (dimension values) for a dataflow with descriptions. Returns all valid values for each dimension.',
+                description='Get available constraints (dimension values) for a dataflow with descriptions. Returns valid values for each dimension. Use the optional `dimensions` parameter to fetch only the dimensions you need (e.g., ["AGE", "SEX"]) — this avoids unnecessary API calls for irrelevant dimensions.',
                 inputSchema={
                     'type': 'object',
                     'properties': {
                         'dataflow_id': {
                             'type': 'string',
                             'description': "Dataflow ID (e.g., '101_1015_DF_DCSP_COLTIVAZIONI_1')",
-                        }
+                        },
+                        'dimensions': {
+                            'type': 'array',
+                            'items': {'type': 'string'},
+                            'description': "Optional list of dimension IDs to fetch (e.g., ['AGE', 'SEX']). If omitted, all dimensions are returned.",
+                        },
                     },
                     'required': ['dataflow_id'],
                 },
@@ -215,11 +222,73 @@ def create_server() -> Server:
                 },
             ),
             Tool(
+                name='search_constraint_values',
+                description=(
+                    'Search dimension values for a dataflow. '
+                    'Call get_constraints first to populate the cache, then use this to find specific codes. '
+                    'Supports optional substring search on code or description (Italian/English).'
+                ),
+                inputSchema={
+                    'type': 'object',
+                    'properties': {
+                        'dataflow_id': {
+                            'type': 'string',
+                            'description': "Dataflow ID (e.g., '41_983_DF_DCIS_INCIDMORFER_COM_1')",
+                        },
+                        'dimension': {
+                            'type': 'string',
+                            'description': "Dimension ID to search (e.g., 'REF_AREA', 'SEX')",
+                        },
+                        'search': {
+                            'type': 'string',
+                            'description': "Optional substring to filter by code or description (case-insensitive)",
+                        },
+                    },
+                    'required': ['dataflow_id', 'dimension'],
+                },
+            ),
+            Tool(
                 name='get_cache_diagnostics',
                 description='Get diagnostic information about the cache system (path, size, keys). For debugging.',
                 inputSchema={
                     'type': 'object',
                     'properties': {},
+                },
+            ),
+            Tool(
+                name='get_territorial_codes',
+                description=(
+                    'Get ISTAT REF_AREA codes for a territorial level or by place name. '
+                    'Use level= to get all codes for a level (italia, ripartizione, regione, provincia, comune). '
+                    'Use name= to search by place name (e.g. "Lombardia", "Puglia", "Torino"). '
+                    'Use region= to filter comuni/province by region name or code. '
+                    'Use province= to filter comuni by province name or code. '
+                    'Use capoluogo=true to return only comuni that are capoluogo di provincia.'
+                ),
+                inputSchema={
+                    'type': 'object',
+                    'properties': {
+                        'level': {
+                            'type': 'string',
+                            'description': "Territorial level: 'italia', 'ripartizione', 'regione', 'provincia', 'comune'",
+                        },
+                        'name': {
+                            'type': 'string',
+                            'description': "Place name to search (e.g. 'Lombardia', 'Puglia', 'Torino')",
+                        },
+                        'region': {
+                            'type': 'string',
+                            'description': "Filter by region name or code (e.g. 'Lombardia', 'ITC4')",
+                        },
+                        'province': {
+                            'type': 'string',
+                            'description': "Filter comuni by province name or code (e.g. 'Milano', 'ITC45')",
+                        },
+                        'capoluogo': {
+                            'type': 'boolean',
+                            'description': "If true, return only comuni that are capoluogo di provincia",
+                        },
+                    },
                 },
             ),
         ]
@@ -255,6 +324,10 @@ def create_server() -> Server:
             elif name == 'get_cache_diagnostics':
                 result_dict = await get_cache_diagnostics_handler()
                 result = [result_dict]
+            elif name == 'get_territorial_codes':
+                result = await handle_get_territorial_codes(arguments)
+            elif name == 'search_constraint_values':
+                result = await handle_search_constraint_values(arguments, cache_manager, api_client)
             else:
                 raise ValueError(f'Unknown tool: {name}')
             
@@ -279,5 +352,5 @@ def create_server() -> Server:
             logger.info('=' * 80)
             raise
 
-    logger.info('MCP server configured with 7 tools')
+    logger.info('MCP server configured with 9 tools')
     return server

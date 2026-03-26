@@ -78,6 +78,11 @@ def get_codelist_cache_key(codelist_id: str) -> str:
     return f'api:codelist:{codelist_id}'
 
 
+def get_constraints_keyed_cache_key(dataflow_id: str, key: str) -> str:
+    """Return the cache key for key-filtered constraints."""
+    return f'api:constraints_keyed:{dataflow_id}:{key}'
+
+
 def get_metadata_cache_ttl() -> int:
     """Return the shared metadata TTL in seconds."""
     return METADATA_CACHE_TTL
@@ -172,6 +177,21 @@ async def get_cached_constraints(
     constraints = await cache.get_or_fetch(
         key=get_constraints_cache_key(dataflow_id),
         fetch_func=lambda: api.fetch_constraints(dataflow_id),
+        persistent_ttl=get_metadata_cache_ttl(),
+    )
+    return ensure_model(constraints, ConstraintInfo)
+
+
+async def get_cached_constraints_keyed(
+    cache: CacheManager,
+    api: ApiClient,
+    dataflow_id: str,
+    key: str,
+) -> ConstraintInfo:
+    """Fetch constraints using an SDMX key filter (fast path for large dataflows)."""
+    constraints = await cache.get_or_fetch(
+        key=get_constraints_keyed_cache_key(dataflow_id, key),
+        fetch_func=lambda: api.fetch_constraints(dataflow_id, key=key),
         persistent_ttl=get_metadata_cache_ttl(),
     )
     return ensure_model(constraints, ConstraintInfo)
