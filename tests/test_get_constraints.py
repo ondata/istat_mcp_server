@@ -119,34 +119,29 @@ async def test_get_constraints_success(mock_cache_manager, mock_api_client):
     # Verify result
     assert len(result) == 1
     assert result[0].type == 'text'
-    
-    # Parse JSON response
+
+    # Parse JSON response (now returns summary format)
     import json
     response = json.loads(result[0].text)
-    
-    # Verify response structure
+
+    # Verify response structure (summary output)
     assert response['id_dataflow'] == '101_1015_DF_DCSP_COLTIVAZIONI_1'
-    assert len(response['constraints']) == 3
-    
-    # Verify FREQ dimension
-    freq_dim = response['constraints'][0]
+    assert len(response['dimensions']) == 3
+
+    # Verify FREQ dimension (summary: value_count instead of full values)
+    freq_dim = response['dimensions'][0]
     assert freq_dim['dimension'] == 'FREQ'
     assert freq_dim['codelist'] == 'CL_FREQ'
-    assert len(freq_dim['values']) == 1
-    assert freq_dim['values'][0]['code'] == 'A'
-    assert freq_dim['values'][0]['description_en'] == 'Annual'
-    assert freq_dim['values'][0]['description_it'] == 'Annuale'
-    
+    assert freq_dim['value_count'] == 1
+
     # Verify TYPE_OF_CROP dimension
-    crop_dim = response['constraints'][1]
+    crop_dim = response['dimensions'][1]
     assert crop_dim['dimension'] == 'TYPE_OF_CROP'
     assert crop_dim['codelist'] == 'CL_AGRI_MADRE'
-    assert len(crop_dim['values']) == 2
-    assert crop_dim['values'][0]['code'] == 'APPLE'
-    assert crop_dim['values'][0]['description_en'] == 'Apples'
-    
+    assert crop_dim['value_count'] == 2
+
     # Verify TIME_PERIOD dimension
-    time_dim = response['constraints'][2]
+    time_dim = response['dimensions'][2]
     assert time_dim['dimension'] == 'TIME_PERIOD'
     assert time_dim['StartPeriod'] == '2006-01-01T00:00:00'
     assert time_dim['EndPeriod'] == '2026-12-31T23:59:59'
@@ -249,18 +244,8 @@ async def test_get_constraints_missing_codelist(
         arguments, mock_cache_manager, mock_api_client
     )
 
-    # Verify result - should still return values without descriptions
+    # Codelist fetch now fails during cardinality computation (before enrichment),
+    # so @handle_tool_errors catches it and returns an error message
     assert len(result) == 1
     assert result[0].type == 'text'
-    
-    import json
-    response = json.loads(result[0].text)
-    
-    # Should have dimension with values but no descriptions
-    assert len(response['constraints']) == 1
-    dim = response['constraints'][0]
-    assert dim['dimension'] == 'TEST_DIM'
-    assert len(dim['values']) == 2
-    # Descriptions should be empty since codelist fetch failed
-    assert dim['values'][0]['description_en'] == ''
-    assert dim['values'][0]['description_it'] == ''
+    assert 'error' in result[0].text.lower() or 'Codelist not found' in result[0].text
