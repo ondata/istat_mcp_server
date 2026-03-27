@@ -10,7 +10,7 @@ This Model Context Protocol (MCP) server provides Claude Desktop with access to 
 
 ## Features
 
-- **7 MCP Tools** for data discovery and retrieval:
+- **9 MCP Tools** for data discovery and retrieval:
   - `discover_dataflows` - Find available datasets by keywords (with blacklist filtering)
   - `get_structure` - Get dimension definitions and codelists for a datastructure ID
   - `get_constraints` - Get available constraint values for each dimension with descriptions (combines structure + constraints + codelist descriptions)
@@ -18,6 +18,8 @@ This Model Context Protocol (MCP) server provides Claude Desktop with access to 
   - `get_concepts` - Get semantic definitions of SDMX concepts
   - `get_data` - Fetch actual statistical data in SDMXXML format (with blacklist validation)
   - `get_cache_diagnostics` - Debug tool to inspect cache status
+  - `search_constraint_values` - Search codes for a specific dimension (with optional name filter)
+  - `get_territorial_codes` - Get ISTAT territorial codes by level (comune, provincia, regione, ripartizione)
 
 - **Recommended Workflow** (simple and efficient):
   1. **Discover**: Use `discover_dataflows` to find the dataflow you're interested in

@@ -12,7 +12,7 @@ license: MIT
 compatibility: Requires the ISTAT MCP server (mcp__istat__* tools).
 metadata:
   author: ondata
-  version: "1.0"
+  version: "1.1"
 ---
 
 # ISTAT MCP Server — Query Workflow
@@ -49,12 +49,11 @@ Prefer dataflows whose `name_it`/`name_en` directly match the topic. When in dou
 the top semantic results first, then look for keyword matches that might be more precise.
 
 ```
-discover_dataflows(keywords="disoccupazione regioni", max_results=10)
+discover_dataflows(keywords="disoccupazione regioni")
 ```
 
 Parameters:
 - `keywords`: free text, Italian or English, can be a full question or a few words
-- `max_results`: how many candidates from each source (default 10, max 100)
 
 #### Fallback — when results are not relevant
 
@@ -65,8 +64,7 @@ data doesn't exist. Strategies to try, in order:
 1. **Synonyms or related terms** — e.g., if "olio oliva" fails, try "olive", "oleario", "grassi vegetali"
 2. **Switch language** — if Italian keywords fail, try English (or vice versa)
 3. **Broader category** — e.g., if "olio d'oliva" fails, try "agricoltura", "prodotti alimentari", "agroalimentare"
-4. **Increase `max_results`** — try `max_results=50` to surface less obvious matches
-5. **Different angle** — think about how ISTAT might classify the topic (e.g., by sector ATECO, by transport mode, by price index)
+4. **Different keywords** — think about how ISTAT might classify the topic (e.g., by sector ATECO, by transport mode, by price index)
 
 Only after 2–3 failed `discover_dataflows` attempts with diverse keywords should you conclude
 that the data is not available in this MCP server and suggest alternative sources.
