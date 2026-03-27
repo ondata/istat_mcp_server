@@ -52,6 +52,13 @@ cd istat_mcp_server
 ```
 
 2. Create a virtual environment and install dependencies:
+
+**With uv (recommended):**
+```bash
+uv sync
+```
+
+**With pip:**
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
