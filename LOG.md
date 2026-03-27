@@ -2,6 +2,7 @@
 
 ## 2026-03-27
 
+- feat(skill): spostata `istat-mcp` skill da `.claude/skills/istat-mcp/` a `skills/istat-mcp/` — ora segue lo standard agentskills.io; aggiunto frontmatter `license`, `compatibility`, `metadata`
 - fix: coercion JSON string → tipo nativo per `dimensions` (GetConstraintsInput) e `dimension_filters` (GetDataInput) — il modello LLM passa a volte array/oggetti come stringhe JSON; Pydantic ora li deserializza automaticamente; schema MCP aggiornato con `oneOf [tipo, string]`
 - fix(skill): nota in SKILL.md che `REF_AREA: IT` non è universale — strategia "prova IT, se 404 cerca con search_constraint_values"
 

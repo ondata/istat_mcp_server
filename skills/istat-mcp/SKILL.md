@@ -8,6 +8,11 @@ description: >
   Triggers on requests like "trova dati ISTAT su X", "disoccupazione per regione",
   "dati popolazione Italia", "statistiche agricoltura", or any query that could be
   answered with official Italian statistical data.
+license: MIT
+compatibility: Requires the ISTAT MCP server (mcp__istat__* tools).
+metadata:
+  author: ondata
+  version: "1.0"
 ---
 
 # ISTAT MCP Server — Query Workflow
