@@ -51,11 +51,15 @@ git clone <repository-url>
 cd istat_mcp_server
 ```
 
-2. Create a virtual environment and install dependencies:
+2. Create a virtual environment and install dependencies (Python >=3.11 required):
 
 **With uv (recommended):**
 ```bash
 uv sync
+```
+`uv sync` automatically creates a `.venv` directory and installs all dependencies into it. To run commands manually, activate it first:
+```bash
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 **With pip:**
