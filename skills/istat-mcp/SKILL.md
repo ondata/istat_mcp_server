@@ -22,21 +22,6 @@ Always follow the **3-step workflow** below. Never skip steps.
 
 ---
 
-## Pre-flight check — territory level
-
-> **Do this BEFORE Step 1 if the user mentions a city, municipality, or specific place name.**
-
-When the request contains "città", "comune", or a named city (e.g. "Roma", "Firenze", "Venezia"):
-
-1. Call `get_territorial_codes(level="comune", name="<city>")` → get the **comune** code (e.g. `058091`)
-2. After Step 2, verify the code exists: `search_constraint_values(dataflow_id, dimension="REF_AREA", search="058091")`
-3. If **absent** → tell the user: *"Il dataflow non ha dati a livello comunale; i dati disponibili sono provinciali. Vuoi procedere?"* Then use the province code.
-4. **Never silently fall back to province codes** without informing the user.
-
-This check is **mandatory** — skipping it means returning province data mislabelled as city data.
-
----
-
 ## The 3-Step Workflow
 
 ### Step 1 — `discover_dataflows`
@@ -133,14 +118,7 @@ plus the time range. Full values are cached server-side.
 dimensions on complex dataflows often causes timeouts (180s+). In practice you rarely need more than
 2–3 dimensions at this stage.
 
-**Do NOT include dimensions for which you already have a default value** — there is no need to verify
-them. Specifically:
-- **Never include `SEX`** unless the user asked for a breakdown by sex. Default is `9` (total) — apply it directly in `get_data`.
-- **Never include `FREQ`** unless the user asked for a specific frequency. Default is `A` (annual) — apply it directly in `get_data`.
-- **Never include `TIME_PERIOD`** unless you need to verify coverage. If the user didn't specify a date, apply the default period directly in `get_data` (previous calendar year).
-
-Only request constraints for dimensions whose codes you genuinely need to discover — typically `AGE`
-(when filtering by age) and `REF_AREA` (when filtering by territory other than Italy).
+Only pass dimensions you genuinely need to discover — skip `SEX`, `FREQ`, `TIME_PERIOD` (apply their safe defaults directly in `get_data`, see *Avoiding Timeouts*). Typically only `AGE` and `REF_AREA` need verification here.
 
 ```
 # User asks: "quanti maggiorenni in Italia?" → only need AGE codes
@@ -179,18 +157,7 @@ with all municipalities). For small dimensions (SEX, FREQ, AGE) you can also rea
 
 **Important limitation:** `search_constraint_values` returns codes available **across the entire dataflow**,
 not for a specific combination of other dimensions. A code may appear in the list but return no data
-when combined with certain values of other dimensions (e.g., `TP_THOQUIN_EXT` exists for some crops
-but not for olive oil `PRESIL`). If `get_data` returns no records despite a seemingly valid filter,
-explore which codes actually have data for your specific combination using curl with `lastNObservations=1`:
-
-```bash
-# Omit the uncertain dimension (e.g., DATA_TYPE) to discover which values have data
-curl -kL -H "Accept: application/vnd.sdmx.data+csv;version=1.0.0" \
-  "https://esploradati.istat.it/SDMXWS/rest/data/{dataflow_id}/{FREQ}.{REF_AREA}..{TYPE_OF_CROP}.{DEST}?lastNObservations=1"
-# The response shows which DATA_TYPE codes actually exist for that specific combination
-```
-
-This is the fastest way to discover valid code combinations without downloading the full dataset.
+when combined with certain values of other dimensions. If `get_data` returns no records despite a seemingly valid filter, try omitting the uncertain dimension to discover which codes actually have data for your specific combination.
 
 ### Step 3 — `get_data`
 
@@ -328,13 +295,20 @@ confirm it appears. If the comune code is absent but the provincia code is prese
 only has provincial granularity — **tell the user explicitly** before proceeding with province data.
 
 ```
-# Example: user asks for "città d'arte" → need comune codes
-get_territorial_codes(level="comune", name="Roma")
-# → {"code": "058091", "name_it": "Roma", ...}
+# Step 1: get the code at the RIGHT level (infer from user context)
+get_territorial_codes(level="comune", name="Torino")
+# → {"code": "001272", "name_it": "Torino", ...}
 
-search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="058091")
-# If empty → dataflow has no municipality data. Try province code ITE43 and tell the user.
-# If found → use "058091" in get_data
+# Step 2: verify the code exists in the dataflow
+search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="001272")
+# If found → use "001272" in get_data (municipality data)
+# If empty → the dataflow has no municipality data; try the province code
+get_territorial_codes(level="provincia", name="Torino")
+# → {"code": "ITC11", ...}
+search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="ITC11")
+# If found → inform user that data is only available at province level, then proceed
+
+get_data(..., dimension_filters={"REF_AREA": ["<verified_code>"]})
 ```
 
 Cross-reference the returned codes with what `get_constraints` shows under `REF_AREA`
@@ -399,20 +373,3 @@ get_data(..., dimension_filters={"SEX": ["2"], "AGE": ["Y15-74"]})
 get_data(..., dimension_filters={"FREQ": ["A"]}, start_period="2015-01-01")
 ```
 
-### Specific province or city
-```
-# Step 1: get the code at the RIGHT level (infer from user context)
-get_territorial_codes(level="comune", name="Torino")
-# → {"code": "001272", "name_it": "Torino", ...}
-
-# Step 2: verify the code exists in the dataflow
-search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="001272")
-# If found → use "001272" in get_data (municipality data)
-# If empty → the dataflow has no municipality data; try the province code
-get_territorial_codes(level="provincia", name="Torino")
-# → {"code": "ITC11", ...}
-search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="ITC11")
-# If found → inform user that data is only available at province level, then proceed
-
-get_data(..., dimension_filters={"REF_AREA": ["<verified_code>"]})
-```
