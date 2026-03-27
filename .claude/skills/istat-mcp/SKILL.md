@@ -327,7 +327,7 @@ only has provincial granularity — **tell the user explicitly** before proceedi
 ```
 # Example: user asks for "città d'arte" → need comune codes
 get_territorial_codes(level="comune", name="Roma")
-# → {"code": "058091", "description_it": "Roma", ...}
+# → {"code": "058091", "name_it": "Roma", ...}
 
 search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="058091")
 # If empty → dataflow has no municipality data. Try province code ITE43 and tell the user.
