@@ -135,6 +135,10 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
         if target_level and row_level != target_level:
             continue
 
+        # Name filter
+        if name and name.lower() not in r['name_it'].lower():
+            continue
+
         # Region filter (for comuni: parent_code must be in province_codes_filter)
         if province_codes_filter is not None and row_level == 'comune':
             if r.get('parent_code') not in province_codes_filter:
@@ -152,5 +156,5 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
 
         result.append(_row_to_dict(r, include_level=bool(not level)))
 
-    filters_applied = {k: v for k, v in {'level': level, 'region': region, 'province': province, 'capoluogo': capoluogo if capoluogo else None}.items() if v}
+    filters_applied = {k: v for k, v in {'level': level, 'name': name, 'region': region, 'province': province, 'capoluogo': capoluogo if capoluogo else None}.items() if v}
     return format_json_response({'filters': filters_applied, 'count': len(result), 'codes': result})
