@@ -12,7 +12,7 @@ license: MIT
 compatibility: Requires the ISTAT MCP server (mcp__istat__* tools).
 metadata:
   author: ondata
-  version: "1.1"
+  version: "1.2"
 ---
 
 # ISTAT MCP Server — Query Workflow
@@ -26,23 +26,23 @@ Always follow the **3-step workflow** below. Never skip steps.
 
 ### Step 1 — `discover_dataflows`
 
-Search for relevant dataflows. The tool runs both **semantic search** and **keyword search**
-and returns results as markdown with two sections.
+Search for relevant dataflows. The tool performs **keyword search** across dataflow IDs, names,
+descriptions, and data structure IDs, returning results in compact TOON (Token-Oriented Object
+Notation) text format: one dataflow per line with `id`, `name_it`, `description_it`.
 
-Your job: read both sections and pick the most relevant dataflow ID for the user's request.
-Prefer dataflows whose `name_it`/`name_en` directly match the topic. When in doubt, check
-the top semantic results first, then look for keyword matches that might be more precise.
+Your job: read the results and pick the most relevant dataflow ID for the user's request.
+Prefer dataflows whose `name_it` directly matches the topic.
 
 ```
-discover_dataflows(keywords="disoccupazione regioni")
+discover_dataflows(keywords="disoccupazione,regioni")
 ```
 
 Parameters:
-- `keywords`: free text, Italian or English, can be a full question or a few words
+- `keywords`: comma-separated terms, Italian or English — each token is matched independently against all fields
 
 #### Fallback — when results are not relevant
 
-If the top semantic results don't match the user's topic (e.g., names are about unrelated subjects),
+If the results don't match the user's topic,
 **do not stop** — try `discover_dataflows` again with different keywords before concluding that
 data doesn't exist. Strategies to try, in order:
 
@@ -53,31 +53,6 @@ data doesn't exist. Strategies to try, in order:
 
 Only after 2–3 failed `discover_dataflows` attempts with diverse keywords should you conclude
 that the data is not available in this MCP server and suggest alternative sources.
-
-#### Use technical prefixes as first keyword
-
-ISTAT dataflow IDs follow a naming convention based on thematic prefixes. **Always start with a technical prefix keyword** rather than a generic description — this hits the keyword search directly and avoids multiple fallback attempts.
-
-| Thematic area | Prefix | Example topic |
-|---|---|---|
-| Demographic / population structure | `DCIS_` | `DCIS_POPSTRRES` (resident pop.), `DCIS_INDDEMOG` (demographic indicators) |
-| Living conditions / labour / poverty | `DCCV_` | `DCCV_TAXDISOCCU` (unemployment), `DCCV_FORZLVDE` (labour force) |
-| Agricultural / industrial production | `DCSP_` | crop yields, livestock, industrial output |
-| National accounts | `DCCN_` | GDP, value added, quarterly population |
-| Health / vital statistics | `DCIS_` | `DCIS_MORTALITA` (mortality), `DCIS_NATM` (births) |
-
-**Rule:** map the user's topic to the most likely prefix, then combine it with a specific term:
-
-```
-# User asks about adult population → demographic → DCIS_ + POPSTRRES
-discover_dataflows(keywords="DCIS_POPSTRRES")
-
-# User asks about unemployment → living conditions → DCCV_ + TAXDISOCCU
-discover_dataflows(keywords="DCCV_TAXDISOCCU")
-```
-
-If you don't know the exact suffix, use just the prefix + a key noun (e.g., `DCIS_POP`, `DCCV_DISOC`).
-Only fall back to generic Italian/English descriptions if the technical prefix approach yields no results.
 
 #### Generic vs specific dataflow IDs
 
@@ -349,7 +324,7 @@ Do not retry a call that appears to be hanging — it is likely queued behind th
 
 ### Regional data for all Italy
 ```
-1. discover_dataflows(keywords="tasso disoccupazione regionale")
+1. discover_dataflows(keywords="tasso disoccupazione,regionale")
 2. get_constraints(dataflow_id="...")      # confirm REF_AREA has ITC1–ITG2
 3. get_territorial_codes(level="regione") # get all 21 region codes
 4. get_data(id_dataflow="...", dimension_filters={

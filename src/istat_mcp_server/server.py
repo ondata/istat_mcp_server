@@ -16,6 +16,7 @@ from .cache.memory import MemoryCache
 from .cache.persistent import PersistentCache
 from .tools import (
     get_cache_diagnostics_handler,
+    handle_check_code_exists,
     handle_discover_dataflows,
     handle_get_codelist_description,
     handle_get_concepts,
@@ -102,6 +103,35 @@ def create_server() -> Server:
     async def list_tools() -> list[Tool]:
         """List available MCP tools."""
         return [
+            Tool(
+                name='check_code_exists',
+                description=(
+                    'Check if one or more codes exist for a given dimension in a specific dataflow. '
+                    'Uses available constraint metadata (no data observations are downloaded) to verify existence. '
+                    'Returns true/false for each code. Useful for verifying territorial codes (REF_AREA), '
+                    'age groups (AGE), sex codes (SEX), or any other dimension before calling get_data. '
+                    'Note: TIME_PERIOD cannot be checked with this tool — use get_constraints for the time range.'
+                ),
+                inputSchema={
+                    'type': 'object',
+                    'properties': {
+                        'dataflow_id': {
+                            'type': 'string',
+                            'description': "Dataflow ID (e.g., '41_270_DF_DCIS_MORTIFERITISTR1_1')",
+                        },
+                        'dimension': {
+                            'type': 'string',
+                            'description': "Dimension ID to check (e.g., 'REF_AREA', 'AGE', 'SEX')",
+                        },
+                        'codes': {
+                            'type': 'array',
+                            'items': {'type': 'string'},
+                            'description': "Codes to check (e.g., ['082053', 'ITG12', 'IT'])",
+                        },
+                    },
+                    'required': ['dataflow_id', 'dimension', 'codes'],
+                },
+            ),
             Tool(
                 name='discover_dataflows',
                 description='Discover available dataflows from ISTAT SDMX API. Optionally filter by comma-separated keywords.',
@@ -319,7 +349,9 @@ def create_server() -> Server:
         error = None
 
         try:
-            if name == 'discover_dataflows':
+            if name == 'check_code_exists':
+                result = await handle_check_code_exists(arguments, cache_manager, api_client)
+            elif name == 'discover_dataflows':
                 result = await handle_discover_dataflows(arguments, cache_manager, api_client, blacklist)
             elif name == 'get_structure':
                 result = await handle_get_structure(arguments, cache_manager, api_client)
@@ -364,5 +396,5 @@ def create_server() -> Server:
             logger.info('=' * 80)
             raise
 
-    logger.info('MCP server configured with 9 tools')
+    logger.info('MCP server configured with 10 tools')
     return server
