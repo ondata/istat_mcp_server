@@ -467,7 +467,14 @@ async def handle_get_data(
                 if time_period_end:
                     logger.info(f'get_data: TIME_PERIOD fetched: {time_period_start} to {time_period_end}')
             except json.JSONDecodeError:
-                pass
+                # Log a warning if the targeted TIME_PERIOD constraints response is not valid JSON,
+                # including a short prefix of the raw response text for debugging.
+                response_prefix = tp_response[0].text[:200] if tp_response and tp_response[0].text else ''
+                logger.warning(
+                    'get_data: Failed to parse targeted TIME_PERIOD constraints JSON; '
+                    'response prefix=%r',
+                    response_prefix,
+                )
 
     # Step 2: Determine start/end periods
     # If user didn't specify periods, use the last year from TIME_PERIOD range
