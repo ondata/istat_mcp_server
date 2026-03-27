@@ -127,12 +127,17 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
         logger.info(f'get_territorial_codes: province={province} → {province_code_filter}')
 
     # --- Apply filters ---
+    name_lower = name.lower() if name else ''
     result = []
     for r in rows:
         row_level = r['level']
 
         # Level filter
         if target_level and row_level != target_level:
+            continue
+
+        # Name filter
+        if name_lower and name_lower not in r['name_it'].lower():
             continue
 
         # Region filter (for comuni: parent_code must be in province_codes_filter)
@@ -152,5 +157,5 @@ async def handle_get_territorial_codes(arguments: dict[str, Any]) -> list[TextCo
 
         result.append(_row_to_dict(r, include_level=bool(not level)))
 
-    filters_applied = {k: v for k, v in {'level': level, 'region': region, 'province': province, 'capoluogo': capoluogo if capoluogo else None}.items() if v}
+    filters_applied = {k: v for k, v in {'level': level, 'name': name, 'region': region, 'province': province, 'capoluogo': capoluogo if capoluogo else None}.items() if v}
     return format_json_response({'filters': filters_applied, 'count': len(result), 'codes': result})

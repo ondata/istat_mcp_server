@@ -17,6 +17,21 @@ Always follow the **3-step workflow** below. Never skip steps.
 
 ---
 
+## Pre-flight check — territory level
+
+> **Do this BEFORE Step 1 if the user mentions a city, municipality, or specific place name.**
+
+When the request contains "città", "comune", or a named city (e.g. "Roma", "Firenze", "Venezia"):
+
+1. Call `get_territorial_codes(level="comune", name="<city>")` → get the **comune** code (e.g. `058091`)
+2. After Step 2, verify the code exists: `search_constraint_values(dataflow_id, dimension="REF_AREA", search="058091")`
+3. If **absent** → tell the user: *"Il dataflow non ha dati a livello comunale; i dati disponibili sono provinciali. Vuoi procedere?"* Then use the province code.
+4. **Never silently fall back to province codes** without informing the user.
+
+This check is **mandatory** — skipping it means returning province data mislabelled as city data.
+
+---
+
 ## The 3-Step Workflow
 
 ### Step 1 — `discover_dataflows`
@@ -257,6 +272,13 @@ and includes a note with the total row count. If truncation occurs:
 
 ## Territorial Codes — `get_territorial_codes`
 
+> **Mandatory rule:** whenever the user asks for data at a specific geographic level
+> (city, province, region), **immediately call `get_territorial_codes(level=..., name=...)`**
+> to obtain the correct territorial code. Do this **before** any `search_constraint_values`
+> call on the dataflow. Never try to discover territorial codes by searching names inside
+> `search_constraint_values` — that approach returns whatever happens to be in the dataflow
+> and leads to silently using the wrong geographic level (e.g., province instead of city).
+
 Use this **before Step 3** when the user asks for data by territory and you need REF_AREA codes.
 
 ```
@@ -269,7 +291,47 @@ get_territorial_codes(level="italia")        # national level → IT
 
 # Search by name (substring, case-insensitive)
 get_territorial_codes(name="Lombardia")   # → ITC4
-get_territorial_codes(name="Torino")      # → search across all levels
+get_territorial_codes(name="Torino")      # → search across all levels (returns multiple hits)
+```
+
+### Always match the geographic level to user intent
+
+`get_territorial_codes(name="Roma")` returns results across **all levels** (comune, provincia,
+regione). The results include codes like `058091` (comune di Roma) and `ITE43` (provincia di Roma).
+**Picking the wrong level silently produces incorrect data** — province data passed off as city data.
+
+**Rule: infer the intended level from context, then filter explicitly:**
+
+| User says | Intended level | `get_territorial_codes` call |
+|---|---|---|
+| "città", "comune", specific city name | `comune` | `get_territorial_codes(level="comune", name="Roma")` |
+| "provincia", "province of…" | `provincia` | `get_territorial_codes(level="provincia", name="Roma")` |
+| "regione", "region" | `regione` | `get_territorial_codes(level="regione", name="Lazio")` |
+
+**Always pass `level=` explicitly** when searching by name. Do not call
+`get_territorial_codes(name="Roma")` without `level=` — the multi-level results
+make it ambiguous which code to pick.
+
+> **Anti-pattern — never use `search_constraint_values` to discover territorial codes by name.**
+> Calling `search_constraint_values(dataflow_id, dimension="REF_AREA", search="Roma")` returns
+> whatever codes are *in the dataflow* that match the string "Roma" — often a **province code**
+> (e.g., `ITE43 — Roma`) that looks like the city but is actually the province.
+> **Always call `get_territorial_codes(level=..., name=...)` first** to get the correct code,
+> then use `search_constraint_values` only to *verify* that specific code exists in the dataflow.
+
+**Then verify the code exists in the dataflow.** After getting the comune code (e.g., `058091`),
+run `search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="058091")` to
+confirm it appears. If the comune code is absent but the provincia code is present, the dataflow
+only has provincial granularity — **tell the user explicitly** before proceeding with province data.
+
+```
+# Example: user asks for "città d'arte" → need comune codes
+get_territorial_codes(level="comune", name="Roma")
+# → {"code": "058091", "name_it": "Roma", ...}
+
+search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="058091")
+# If empty → dataflow has no municipality data. Try province code ITE43 and tell the user.
+# If found → use "058091" in get_data
 ```
 
 Cross-reference the returned codes with what `get_constraints` shows under `REF_AREA`
@@ -336,9 +398,18 @@ get_data(..., dimension_filters={"FREQ": ["A"]}, start_period="2015-01-01")
 
 ### Specific province or city
 ```
-get_territorial_codes(name="Torino")     # fast lookup via local parquet (no API call)
-get_constraints(dataflow_id="...")       # confirm REF_AREA has value_count > 0
-# If get_territorial_codes didn't find the code (non-territorial dimension), use:
-search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="Torino")
-get_data(..., dimension_filters={"REF_AREA": ["<code>"]})
+# Step 1: get the code at the RIGHT level (infer from user context)
+get_territorial_codes(level="comune", name="Torino")
+# → {"code": "001272", "name_it": "Torino", ...}
+
+# Step 2: verify the code exists in the dataflow
+search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="001272")
+# If found → use "001272" in get_data (municipality data)
+# If empty → the dataflow has no municipality data; try the province code
+get_territorial_codes(level="provincia", name="Torino")
+# → {"code": "ITC11", ...}
+search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="ITC11")
+# If found → inform user that data is only available at province level, then proceed
+
+get_data(..., dimension_filters={"REF_AREA": ["<verified_code>"]})
 ```
