@@ -1,6 +1,8 @@
 """Pydantic models for API requests and responses."""
 
-from pydantic import AliasChoices, BaseModel, Field
+import json
+
+from pydantic import AliasChoices, BaseModel, Field, field_validator
 
 
 # ===== Input Models (for tool arguments) =====
@@ -42,6 +44,13 @@ class GetConstraintsInput(BaseModel):
         description="Optional list of dimension IDs to fetch (e.g., ['AGE', 'SEX']). If omitted, all dimensions are returned.",
     )
 
+    @field_validator('dimensions', mode='before')
+    @classmethod
+    def coerce_dimensions(cls, v: object) -> object:
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
+
 
 class GetCodelistDescriptionInput(BaseModel):
     """Input for get_codelist_description tool."""
@@ -64,6 +73,13 @@ class GetDataInput(BaseModel):
         validation_alias=AliasChoices('dimension_filters', 'filters'),
         description="Optional filters for dimensions. Keys are dimension IDs, values are lists of codes.",
     )
+
+    @field_validator('dimension_filters', mode='before')
+    @classmethod
+    def coerce_dimension_filters(cls, v: object) -> object:
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
     start_period: str | None = Field(
         None, description="Start period for time filter (e.g., '2024-11-01')"
     )

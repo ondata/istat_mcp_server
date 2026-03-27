@@ -216,6 +216,12 @@ with every dimension you leave open: 20 regions × 3 sexes × 5 age groups × 20
 **Default territory:** if the user does not specify a territory, always use Italy (`REF_AREA: ["IT"]`).
 Do not ask — apply this silently and mention it in the answer.
 
+> **Warning — `IT` is not universal.** Most dataflows use `IT` for the national total, but
+> some (e.g., PRA vehicle registry, certain agricultural series) use a different code such as
+> `ITTOT`. **Strategy:** always try `REF_AREA: ["IT"]` first. If `get_data` returns a 404 or
+> empty result, immediately run `search_constraint_values(dataflow_id="...", dimension="REF_AREA")`
+> to discover the correct national code, then retry `get_data` with that code.
+
 **Default period:** if the user does not specify a time range, use the last available year.
 Concretely: set `start_period` and `end_period` both to the previous calendar year
 (e.g., if today is 2026, use `start_period="2025-01-01"`, `end_period="2025-12-31"`).

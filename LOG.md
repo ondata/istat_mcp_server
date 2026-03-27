@@ -1,5 +1,10 @@
 # LOG
 
+## 2026-03-27
+
+- fix: coercion JSON string → tipo nativo per `dimensions` (GetConstraintsInput) e `dimension_filters` (GetDataInput) — il modello LLM passa a volte array/oggetti come stringhe JSON; Pydantic ora li deserializza automaticamente; schema MCP aggiornato con `oneOf [tipo, string]`
+- fix(skill): nota in SKILL.md che `REF_AREA: IT` non è universale — strategia "prova IT, se 404 cerca con search_constraint_values"
+
 ## 2026-03-26
 
 - perf: `get_constraints` — strategia ibrida per evitare timeout su dataflow grandi (es. `DCIS_POPSTRRES1`: 119 miliardi di combinazioni teoriche, `availableconstraint/all/all` impiegava 325s):

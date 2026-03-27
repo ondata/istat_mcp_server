@@ -140,8 +140,10 @@ def create_server() -> Server:
                             'description': "Dataflow ID (e.g., '101_1015_DF_DCSP_COLTIVAZIONI_1')",
                         },
                         'dimensions': {
-                            'type': 'array',
-                            'items': {'type': 'string'},
+                            'oneOf': [
+                                {'type': 'array', 'items': {'type': 'string'}},
+                                {'type': 'string'},
+                            ],
                             'description': "Optional list of dimension IDs to fetch (e.g., ['AGE', 'SEX']). If omitted, all dimensions are returned.",
                         },
                     },
@@ -185,20 +187,30 @@ def create_server() -> Server:
                             'description': "Alias of id_dataflow (for compatibility).",
                         },
                         'dimension_filters': {
-                            'type': 'object',
+                            'oneOf': [
+                                {
+                                    'type': 'object',
+                                    'additionalProperties': {
+                                        'type': 'array',
+                                        'items': {'type': 'string'},
+                                    },
+                                },
+                                {'type': 'string'},
+                            ],
                             'description': 'Optional dimension filters. Keys are dimension IDs, values are arrays of codes.',
-                            'additionalProperties': {
-                                'type': 'array',
-                                'items': {'type': 'string'},
-                            },
                         },
                         'filters': {
-                            'type': 'object',
+                            'oneOf': [
+                                {
+                                    'type': 'object',
+                                    'additionalProperties': {
+                                        'type': 'array',
+                                        'items': {'type': 'string'},
+                                    },
+                                },
+                                {'type': 'string'},
+                            ],
                             'description': 'Alias of dimension_filters (for compatibility).',
-                            'additionalProperties': {
-                                'type': 'array',
-                                'items': {'type': 'string'},
-                            },
                         },
                         'start_period': {
                             'type': 'string',
