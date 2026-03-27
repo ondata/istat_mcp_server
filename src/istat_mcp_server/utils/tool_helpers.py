@@ -98,6 +98,24 @@ def get_observed_data_cache_ttl() -> int:
     return OBSERVED_DATA_CACHE_TTL
 
 
+def format_toon_dataflows(dataflows: list) -> list[TextContent]:
+    """Format dataflows as TOON (Token-Oriented Object Notation).
+
+    Includes only id, name_it, description_it to minimise token usage.
+    Values are CSV-quoted to handle commas inside field content.
+    """
+    import csv
+    import io
+
+    lines = [f'dataflows[{len(dataflows)}]{{id,name_it,description_it}}:']
+    for df in dataflows:
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow([df.id, df.name_it, df.description_it])
+        lines.append(' ' + buf.getvalue().rstrip('\r\n'))
+    return [TextContent(type='text', text='\n'.join(lines))]
+
+
 def format_json_response(data: dict[str, Any] | BaseModel) -> list[TextContent]:
     """Format data as JSON TextContent response.
     

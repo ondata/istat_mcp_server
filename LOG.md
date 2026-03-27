@@ -2,6 +2,9 @@
 
 ## 2026-03-27
 
+- perf: `discover_dataflows` — output cambiato da JSON a TOON (Token-Oriented Object Notation); solo campi `id`, `name_it`, `description_it` (rimossi campi EN e metadata); riduzione payload da ~123KB a ~7KB per query tipica; aggiunta `format_toon_dataflows` in `tool_helpers.py`
+
+- feat: nuovo tool `check_ref_area` — verifica esistenza codici REF_AREA in un dataflow con singola richiesta `lastNObservations=1`; restituisce `{code, exists}` per ogni codice senza scaricare dati; aggiunto metodo `check_ref_area_exists` in `ApiClient`
 - docs: aggiunta sezione "Progressive Discovery" in README.md e README_IT.md — spiega approccio a strati per gestire risposte SDMX grandi, con tabella step/tool/dimensione-risposta e esempio parametro `dimensions`; corretto conteggio tool in README_IT (7→9)
 - feat(skill): spostata `istat-mcp` skill da `.claude/skills/istat-mcp/` a `skills/istat-mcp/` — ora segue lo standard agentskills.io; aggiunto frontmatter `license`, `compatibility`, `metadata`
 - fix: coercion JSON string → tipo nativo per `dimensions` (GetConstraintsInput) e `dimension_filters` (GetDataInput) — il modello LLM passa a volte array/oggetti come stringhe JSON; Pydantic ora li deserializza automaticamente; schema MCP aggiornato con `oneOf [tipo, string]`
