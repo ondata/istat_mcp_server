@@ -400,7 +400,7 @@ get_data(..., dimension_filters={"FREQ": ["A"]}, start_period="2015-01-01")
 ```
 # Step 1: get the code at the RIGHT level (infer from user context)
 get_territorial_codes(level="comune", name="Torino")
-# → {"code": "001272", "description_it": "Torino", ...}
+# → {"code": "001272", "name_it": "Torino", ...}
 
 # Step 2: verify the code exists in the dataflow
 search_constraint_values(dataflow_id="...", dimension="REF_AREA", search="001272")
