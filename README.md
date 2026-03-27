@@ -79,7 +79,7 @@ AVAILABLECONSTRAINT_TIMEOUT_SECONDS=180
 
 This server works with any MCP-compatible client. The sections below cover the most common ones.
 
-[Claude Desktop](#claude-desktop) | [Claude Code](#claude-code) | [Gemini CLI](#gemini-cli) | [VS Code](#vs-code) | [Claude Desktop on Windows with Python on WSL2](#claude-desktop-on-windows-with-python-on-wsl2)
+[Claude Desktop](#claude-desktop) | [Claude Code](#claude-code) | [Gemini CLI](#gemini-cli) | [VS Code](#vs-code) | [Codex CLI](#codex-cli) | [Claude Desktop on Windows with Python on WSL2](#claude-desktop-on-windows-with-python-on-wsl2)
 
 > In all examples, replace `/path/to/istat_mcp_server` with the actual path to this directory, and `python` with `python3` if needed on your system.
 
@@ -135,7 +135,13 @@ Or add manually to `.mcp.json` in your project root:
 
 ### Gemini CLI
 
-Add manually to `~/.gemini/settings.json`:
+**Add globally:**
+
+```bash
+gemini mcp add -s user istat -- python -m istat_mcp_server --cwd /path/to/istat_mcp_server
+```
+
+Or add manually to `~/.gemini/settings.json`:
 
 ```json
 {
@@ -163,6 +169,17 @@ Add to your User Settings or `.vscode/settings.json`:
     }
   }
 }
+```
+
+### Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.istat]
+command = "python"
+args = ["-m", "istat_mcp_server"]
+cwd = "/path/to/istat_mcp_server"
 ```
 
 ### Claude Desktop on Windows with Python on WSL2
