@@ -69,7 +69,18 @@ git clone <repository-url>
 cd istat_mcp_server
 ```
 
-2. Crea un virtual environment e installa le dipendenze:
+2. Crea un virtual environment e installa le dipendenze (richiesto Python >=3.11):
+
+**Con uv (consigliato):**
+```bash
+uv sync
+```
+`uv sync` crea automaticamente una directory `.venv` e installa tutte le dipendenze al suo interno. Per eseguire comandi manualmente, attivalo prima:
+```bash
+source .venv/bin/activate  # Su Windows: .venv\Scripts\activate
+```
+
+**Con pip:**
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Su Windows: .venv\Scripts\activate
@@ -90,7 +101,7 @@ AVAILABLECONSTRAINT_TIMEOUT_SECONDS=180
 
 Questo server funziona con qualsiasi client compatibile con MCP. Le sezioni seguenti coprono i più comuni.
 
-[Claude Desktop](#claude-desktop) | [Claude Code](#claude-code) | [Gemini CLI](#gemini-cli) | [VS Code](#vs-code) | [Claude Desktop su Windows con Python su WSL2](#claude-desktop-su-windows-con-python-su-wsl2)
+[Claude Desktop](#claude-desktop) | [Claude Code](#claude-code) | [Gemini CLI](#gemini-cli) | [VS Code](#vs-code) | [Codex CLI](#codex-cli) | [Claude Desktop su Windows con Python su WSL2](#claude-desktop-su-windows-con-python-su-wsl2)
 
 > In tutti gli esempi, sostituisci `/path/to/istat_mcp_server` con il percorso reale di questa directory, e `python` con `python3` se necessario sul tuo sistema.
 
@@ -146,7 +157,13 @@ Oppure aggiungi manualmente a `.mcp.json` nella root del tuo progetto:
 
 ### Gemini CLI
 
-Aggiungi manualmente a `~/.gemini/settings.json`:
+**Aggiungi globalmente:**
+
+```bash
+gemini mcp add -s user istat -- python -m istat_mcp_server --cwd /path/to/istat_mcp_server
+```
+
+Oppure aggiungi manualmente a `~/.gemini/settings.json`:
 
 ```json
 {
@@ -177,6 +194,17 @@ Aggiungi alle impostazioni utente o a `.vscode/settings.json`:
 ```
 
 Sostituisci `/path/to/istat_mcp_server` con il percorso reale di questa directory.
+
+### Codex CLI
+
+Aggiungi a `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.istat]
+command = "python"
+args = ["-m", "istat_mcp_server"]
+cwd = "/path/to/istat_mcp_server"
+```
 
 ### Claude Desktop su Windows con Python su WSL2
 
