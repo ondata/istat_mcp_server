@@ -87,6 +87,25 @@ Aggiungi al file di configurazione di Claude Desktop:
 
 Sostituisci `/path/to/istat_mcp_server` con il percorso reale di questa directory.
 
+## Skill (Consigliata)
+
+Questo progetto include una [Agent Skill](https://agentskills.io/) in `skills/istat-mcp/` che guida il modello passo-passo nel workflow corretto. **Si raccomanda fortemente di installare la skill** per un'esperienza migliore: riduce gli errori, evita chiamate API inutili e produce risultati piu accurati.
+
+### Claude Code CLI
+
+```bash
+claude skills add ./skills/istat-mcp
+```
+
+### Claude Desktop
+
+1. Apri **Claude Desktop**
+2. Clicca sull'icona **Impostazioni** (icona ingranaggio, in basso a sinistra)
+3. Seleziona **Skills** nella barra laterale sinistra
+4. Clicca su **"Add Skill"**
+5. Naviga fino alla cartella `skills/istat-mcp` di questo repository e selezionala
+6. La skill apparira nella lista come **istat-mcp** — assicurati che sia abilitata
+
 ## Configurazione blacklist dataflow
 
 Puoi escludere dataflow specifici da tutte le query tramite variabili d'ambiente. Utile per filtrare dataset problematici o non desiderati.
@@ -257,6 +276,7 @@ I contributi sono benvenuti. Apri una issue o una pull request.
 ## Autore
 
 - Vincenzo Patruno: https://www.linkedin.com/in/vincenzopatruno/
+- Andrea Borruso: https://www.linkedin.com/in/andreaborruso
 
 ## Riferimenti
 

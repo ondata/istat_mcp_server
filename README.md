@@ -68,37 +68,12 @@ Optional: for slow `availableconstraint` responses used by `get_constraints`, se
 AVAILABLECONSTRAINT_TIMEOUT_SECONDS=180
 ```
 
-## Quick Setup (npx)
-
-The fastest way to use this server is via `npx`, with no cloning or virtual environment required.
-
-### Claude Code CLI
-
-```bash
-claude mcp add istat -- npx -y istat-mcp-server
-```
-
-### Claude Desktop
+## Configuration for Claude Desktop
 
 Add to your Claude Desktop configuration file:
 
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "istat": {
-      "command": "npx",
-      "args": ["-y", "istat-mcp-server"]
-    }
-  }
-}
-```
-
-### Alternative: from source
-
-If you prefer to run from a local clone:
 
 ```json
 {
