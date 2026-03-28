@@ -178,6 +178,14 @@ class ApiClient:
             elapsed = time.time() - start_time
             logger.error(f'✗ HTTP ERROR {e.response.status_code} for {url} after {elapsed:.3f}s')
             logger.error(f'  Response: {e.response.text[:200]}...' if len(e.response.text) > 200 else f'  Response: {e.response.text}')
+            # ISTAT returns HTTP 404 with body "NoRecordsFound" when no data matches the filters
+            if e.response.status_code == 404 and 'NoRecordsFound' in e.response.text:
+                raise ApiError(
+                    'No data found for the requested filters/period. '
+                    'Try using a different time period or broader filters. '
+                    'Note: get_constraints may report a wider EndPeriod than what is actually available at municipal level.',
+                    404
+                ) from e
             raise ApiError(
                 f'HTTP error: {e.response.status_code}', e.response.status_code
             ) from e
