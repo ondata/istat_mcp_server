@@ -85,7 +85,12 @@ When both options appear in `discover_dataflows` results, pick the less granular
 
 ### Step 2 — `get_constraints`
 
-**Always verify** the data is available with the desired cut before fetching.
+> **Skip this step when territorial codes are already known.** If you obtained REF_AREA codes via
+> `get_territorial_codes`, go directly to **Step 2b** (`check_code_exists`) — `get_constraints` is
+> only needed when you don't yet know which dimension codes to use (e.g., discovering AGE groups,
+> checking available FREQ values, or finding the time range).
+
+**Verify** the data is available with the desired cut before fetching.
 Returns a **compact summary**: for each dimension, the codelist ID and the number of available values,
 plus the time range. Full values are cached server-side.
 
@@ -142,8 +147,14 @@ search_constraint_values(dataflow_id="41_983_...", dimension="REF_AREA", search=
 | Situation | Tool to use |
 |---|---|
 | Code already known (from `get_territorial_codes` or user input) | `check_code_exists` |
+| `check_code_exists` returns false → discover what level is available | `search_constraint_values` |
 | Need to discover what codes exist | `search_constraint_values` |
 | Need to find a code by name | `search_constraint_values(search=...)` |
+
+**Fallback when `check_code_exists` returns false:** the dataflow likely doesn't have data at that
+geographic level. Use `search_constraint_values(dataflow_id="...", dimension="REF_AREA")` to discover
+what territorial level is actually available (e.g., province instead of municipality), then get the
+correct code with `get_territorial_codes(level="provincia", name="...")` and inform the user.
 
 **Important limitation:** `search_constraint_values` returns codes available **across the entire dataflow**,
 not for a specific combination of other dimensions. A code may appear in the list but return no data
