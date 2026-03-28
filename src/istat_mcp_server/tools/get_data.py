@@ -313,24 +313,43 @@ def _extract_constraints_info(constraints_data: dict[str, Any]) -> tuple[list[st
     return dimension_order, time_period_start, time_period_end
 
 
-def _determine_default_periods(time_period_end: str | None) -> tuple[str, str]:
+def _determine_default_periods(time_period_end: str | None) -> tuple[str | None, str | None]:
     """Determine default start/end periods if not specified by user.
-    
+
+    Some dataflows return an inverted or nonsensical TIME_PERIOD constraint from
+    the ISTAT API (e.g. EndPeriod="0001-12-31" and StartPeriod="9999-01-01").
+    In those cases the extracted year would be outside the plausible range
+    [1900, 2100], so we fall back to the previous calendar year rather than
+    passing an invalid period to the API (which would cause a 404).
+
     Args:
         time_period_end: End period from TIME_PERIOD constraint
-        
+
     Returns:
         Tuple of (start_period, end_period) as strings
     """
+    _YEAR_MIN = 1900
+    _YEAR_MAX = 2100
+
     if time_period_end:
         # Extract year from end period (format: YYYY-MM-DD or YYYY)
         try:
-            end_year = time_period_end.split('-')[0] if '-' in time_period_end else time_period_end[:4]
-            logger.info(f'get_data: No periods specified, using last available year: {end_year}')
-            return end_year, end_year
+            end_year_str = time_period_end.split('-')[0] if '-' in time_period_end else time_period_end[:4]
+            end_year = int(end_year_str)
+            if _YEAR_MIN <= end_year <= _YEAR_MAX:
+                logger.info(f'get_data: No periods specified, using last available year: {end_year}')
+                return str(end_year), str(end_year)
+            else:
+                # Implausible year (e.g. 0001 or 9999): return None to signal that
+                # the caller should use lastNObservations=1 instead of a period filter.
+                logger.warning(
+                    f'get_data: TIME_PERIOD EndPeriod "{time_period_end}" yields implausible year '
+                    f'{end_year} (outside [{_YEAR_MIN}, {_YEAR_MAX}]); will use lastNObservations=1'
+                )
+                return None, None
         except (IndexError, ValueError):
             logger.warning(f'get_data: Could not parse TIME_PERIOD: {time_period_end}, using fallback')
-    
+
     # Fallback: use previous year
     current_year = datetime.now().year - 1
     logger.info(f'get_data: No TIME_PERIOD info, using fallback year: {current_year}')
@@ -347,6 +366,8 @@ def _build_curl_info(
     start_period: str | None,
     end_period: str | None,
     detail: str,
+    last_n_observations: int | None = None,
+    first_n_observations: int | None = None,
 ) -> str:
     """Build a curl command and query explanation for the user.
 
@@ -366,6 +387,10 @@ def _build_curl_info(
         qp['startPeriod'] = start_period
     if end_period:
         qp['endPeriod'] = end_period
+    if last_n_observations is not None:
+        qp['lastNObservations'] = str(last_n_observations)
+    if first_n_observations is not None:
+        qp['firstNObservations'] = str(first_n_observations)
 
     url = f'{base_path}?{urlencode(qp)}'
 
@@ -486,11 +511,19 @@ async def handle_get_data(
     # If user didn't specify periods, use the last year from TIME_PERIOD range
     start_period = params.start_period
     end_period = params.end_period
+    last_n_observations = params.last_n_observations
+    first_n_observations = params.first_n_observations
 
     if not start_period and not end_period:
         start_period, end_period = _determine_default_periods(time_period_end)
-    
-    logger.info(f'get_data: Requesting data for period={start_period} to {end_period}')
+        if start_period is None and end_period is None:
+            # TIME_PERIOD constraint is broken/inverted — fall back to lastNObservations=1
+            # so the API returns the most recent observation without needing a valid period.
+            if last_n_observations is None and first_n_observations is None:
+                last_n_observations = 1
+                logger.info('get_data: TIME_PERIOD invalid, auto-setting lastNObservations=1')
+
+    logger.info(f'get_data: Requesting data for period={start_period} to {end_period}, last_n={last_n_observations}')
 
     # Step 3: Get dataflow info to extract agency and version (needed for API call)
     dataflows = await get_cached_dataflows(cache, api)
@@ -514,7 +547,11 @@ async def handle_get_data(
 
     # Step 5: Build cache key
     filter_str = '.'.join('+'.join(f) if f else '.' for f in ordered_dimension_filters) if ordered_dimension_filters else ''
-    cache_key = f'api:data:{params.id_dataflow}:{filter_str}:{start_period or ""}_{end_period or ""}:{params.detail}:{params.dimension_at_observation or "none"}'
+    cache_key = (
+        f'api:data:{params.id_dataflow}:{filter_str}:{start_period or ""}_{end_period or ""}:'
+        f'{params.detail}:{params.dimension_at_observation or "none"}:'
+        f'last{last_n_observations or ""}:first{first_n_observations or ""}'
+    )
 
     # Step 6: Fetch data (cached)
     data_xml = await cache.get_or_fetch(
@@ -528,6 +565,8 @@ async def handle_get_data(
             end_period=end_period,
             detail=params.detail,
             dimension_at_observation=params.dimension_at_observation,
+            last_n_observations=last_n_observations,
+            first_n_observations=first_n_observations,
         ),
         persistent_ttl=get_observed_data_cache_ttl(),
     )
@@ -550,6 +589,8 @@ async def handle_get_data(
         start_period=start_period,
         end_period=end_period,
         detail=params.detail,
+        last_n_observations=last_n_observations,
+        first_n_observations=first_n_observations,
     )
 
     return [TextContent(type='text', text=table_data + curl_info)]

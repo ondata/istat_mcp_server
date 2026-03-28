@@ -204,7 +204,7 @@ def create_server() -> Server:
             ),
             Tool(
                 name='get_data',
-                description='Fetch actual data from a dataflow in TSV table format. Supports dimension filtering and time ranges. If no time period specified, fetches last complete year.',
+                description='Fetch actual data from a dataflow in TSV table format. Supports dimension filtering and time ranges. If no time period specified, fetches last complete year. Use last_n_observations=1 to preview a dataflow structure and most recent values before committing to a full query.',
                 inputSchema={
                     'type': 'object',
                     'properties': {
@@ -258,6 +258,16 @@ def create_server() -> Server:
                         'dimension_at_observation': {
                             'type': 'string',
                             'description': "Dimension at observation level (e.g., 'TIME_PERIOD'). Optional.",
+                        },
+                        'last_n_observations': {
+                            'type': 'integer',
+                            'description': "Return only the N most recent observations per series (SDMX lastNObservations). Use 1 to preview a dataflow. Minimum 1.",
+                            'minimum': 1,
+                        },
+                        'first_n_observations': {
+                            'type': 'integer',
+                            'description': "Return only the N oldest observations per series (SDMX firstNObservations). Minimum 1.",
+                            'minimum': 1,
                         },
                     },
                     'required': ['id_dataflow'],

@@ -87,6 +87,16 @@ class GetDataInput(BaseModel):
     dimension_at_observation: str | None = Field(
         None, description="Dimension to use at observation level (e.g., 'TIME_PERIOD')"
     )
+    last_n_observations: int | None = Field(
+        None,
+        description="Return only the N most recent observations per series (maps to SDMX lastNObservations). Minimum 1.",
+        ge=1,
+    )
+    first_n_observations: int | None = Field(
+        None,
+        description="Return only the N oldest observations per series (maps to SDMX firstNObservations). Minimum 1.",
+        ge=1,
+    )
 
 
 # ===== Response Models (for API data) =====

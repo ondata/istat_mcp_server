@@ -1,5 +1,10 @@
 # LOG
 
+## 2026-03-28
+
+- fix: `_determine_default_periods` ora rileva TIME_PERIOD anomali (anno < 1900 o > 2100) restituiti dall'API ISTAT per alcuni dataflow (es. `DF_BES_TERRIT_2`, EndPeriod="0001-12-31") e usa il fallback all'anno precedente invece di causare un 404; aggiunti 5 test; documentato in SKILL.md
+- feat: `get_data` supporta ora `last_n_observations` e `first_n_observations` — mappati a `lastNObservations`/`firstNObservations` nell'API SDMX; inclusi nella cache key e nel curl output; documentati in SKILL.md
+
 ## 2026-03-27
 
 - perf: `discover_dataflows` — output cambiato da JSON a TOON (Token-Oriented Object Notation); solo campi `id`, `name_it`, `description_it` (rimossi campi EN e metadata); riduzione payload da ~123KB a ~7KB per query tipica; aggiunta `format_toon_dataflows` in `tool_helpers.py`

@@ -7,7 +7,7 @@ from mcp.types import TextContent
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from istat_mcp_server.api.models import DataflowInfo
-from istat_mcp_server.tools.get_data import _parse_period, filter_tsv_by_time_period, handle_get_data
+from istat_mcp_server.tools.get_data import _determine_default_periods, _parse_period, filter_tsv_by_time_period, handle_get_data
 
 
 # ---------------------------------------------------------------------------
@@ -78,6 +78,31 @@ def _make_tsv(*rows: tuple) -> str:
 
 
 HEADER = ('DATAFLOW', 'FREQ', 'TIME_PERIOD', 'OBS_VALUE')
+
+
+# ---------------------------------------------------------------------------
+# _determine_default_periods
+# ---------------------------------------------------------------------------
+
+class TestDetermineDefaultPeriods:
+    def test_normal_year(self):
+        assert _determine_default_periods('2023') == ('2023', '2023')
+
+    def test_normal_datetime(self):
+        assert _determine_default_periods('2022-12-31T23:59:59') == ('2022', '2022')
+
+    def test_inverted_time_period_end_year_0001(self):
+        """Dataflows like DF_BES_TERRIT_2 return EndPeriod='0001-12-31T22:59:59'.
+        Returns (None, None) to signal the caller should use lastNObservations=1."""
+        assert _determine_default_periods('0001-12-31T22:59:59') == (None, None)
+
+    def test_inverted_time_period_start_year_9999(self):
+        assert _determine_default_periods('9999-01-01T00:00:00') == (None, None)
+
+    def test_none_returns_fallback(self):
+        from datetime import datetime
+        fallback = str(datetime.now().year - 1)
+        assert _determine_default_periods(None) == (fallback, fallback)
 
 
 class TestFilterTsvByTimePeriod:

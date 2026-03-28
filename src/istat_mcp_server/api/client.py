@@ -521,6 +521,8 @@ class ApiClient:
         end_period: str | None = None,
         detail: str = 'full',
         dimension_at_observation: str | None = None,
+        last_n_observations: int | None = None,
+        first_n_observations: int | None = None,
     ) -> str:
         """Fetch actual data from ISTAT SDMX API.
 
@@ -533,6 +535,8 @@ class ApiClient:
             end_period: End period for time filter
             detail: Detail level ('full', 'dataonly', 'serieskeysonly', 'nodata')
             dimension_at_observation: Dimension to use at observation level (e.g., 'TIME_PERIOD')
+            last_n_observations: Return only the N most recent observations per series
+            first_n_observations: Return only the N oldest observations per series
 
         Returns:
             Raw SDMX-XML response as string
@@ -567,6 +571,10 @@ class ApiClient:
             params['endPeriod'] = end_period
         if dimension_at_observation:
             params['dimensionAtObservation'] = dimension_at_observation
+        if last_n_observations is not None:
+            params['lastNObservations'] = str(last_n_observations)
+        if first_n_observations is not None:
+            params['firstNObservations'] = str(first_n_observations)
 
         response = await self._get(path, params=params)
         logger.info(f'Fetched data for {dataflow_id}')
