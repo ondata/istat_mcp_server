@@ -383,3 +383,4 @@ I contributi sono benvenuti. Apri una issue o una pull request.
 
 - ISTAT SDMX API: https://esploradati.istat.it/SDMXWS/rest/
 - Model Context Protocol: https://modelcontextprotocol.io/
+- Guida all'API SDMX di ISTAT (in italiano): https://ondata.github.io/guida-api-istat/

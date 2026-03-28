@@ -404,3 +404,4 @@ Contributions are welcome! Please open an issue or pull request.
 
 - ISTAT SDMX API: https://esploradati.istat.it/SDMXWS/rest/
 - Model Context Protocol: https://modelcontextprotocol.io/
+- Guide to the ISTAT SDMX API (in Italian): https://ondata.github.io/guida-api-istat/
