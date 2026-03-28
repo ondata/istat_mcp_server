@@ -17,7 +17,7 @@ metadata:
 
 # ISTAT MCP Server — Query Workflow
 
-This MCP server exposes 9 tools to access Italian ISTAT statistical data via the SDMX REST API.
+This MCP server exposes 10 tools to access Italian ISTAT statistical data via the SDMX REST API.
 Always follow the **3-step workflow** below. Never skip steps.
 
 ---
