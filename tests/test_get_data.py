@@ -2,7 +2,7 @@
 
 import pytest
 
-from istat_mcp_server.tools.get_data import _parse_period, filter_tsv_by_time_period
+from istat_mcp_server.tools.get_data import _build_curl_info, _parse_period, filter_tsv_by_time_period
 
 
 # --- _parse_period tests ---
@@ -101,3 +101,36 @@ class TestFilterTsvByTimePeriod:
         lines = result.strip().split('\n')
         assert len(lines) == 5  # header + 4 quarters
         assert '2021-Q1' not in result
+
+
+# --- _build_curl_info tests ---
+
+
+class TestBuildCurlInfo:
+    def test_contains_url_and_curl(self):
+        result = _build_curl_info(
+            dataflow_id='101_1015_DF_DCSP_COLTIVAZIONI_1',
+            dimension_order=['FREQ', 'REF_AREA'],
+            ordered_dimension_filters=[['A'], ['IT']],
+            start_period='2020',
+            end_period='2020',
+            detail='full',
+        )
+        assert 'curl' in result
+        assert '101_1015_DF_DCSP_COLTIVAZIONI_1' in result
+        assert 'startPeriod=2020' in result
+        assert 'endPeriod=2020' in result
+        assert 'csv' in result
+
+    def test_no_filters(self):
+        result = _build_curl_info(
+            dataflow_id='test_df',
+            dimension_order=['FREQ'],
+            ordered_dimension_filters=[[]],
+            start_period=None,
+            end_period=None,
+            detail='dataonly',
+        )
+        assert 'test_df' in result
+        assert 'curl' in result
+        assert 'n/a' in result

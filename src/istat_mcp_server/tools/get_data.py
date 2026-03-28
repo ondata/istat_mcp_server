@@ -2,9 +2,11 @@
 
 import json
 import logging
+import os
 import re
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlencode
 
 from lxml import etree
 from mcp.types import TextContent
@@ -280,6 +282,56 @@ def _determine_default_periods(time_period_end: str | None) -> tuple[str, str]:
     return str(current_year), str(current_year)
 
 
+API_BASE_URL = os.getenv('API_BASE_URL', 'https://esploradati.istat.it/SDMXWS/rest')
+
+
+def _build_curl_info(
+    dataflow_id: str,
+    dimension_order: list[str],
+    ordered_dimension_filters: list[list[str]],
+    start_period: str | None,
+    end_period: str | None,
+    detail: str,
+) -> str:
+    """Build a curl command and query explanation for the user."""
+    dim_path = '.'.join(
+        '+'.join(f) if f else '' for f in ordered_dimension_filters
+    ) if ordered_dimension_filters else ''
+
+    base_path = f'{API_BASE_URL}/data/{dataflow_id}/{dim_path}/ALL/' if dim_path else f'{API_BASE_URL}/data/{dataflow_id}/ALL/'
+
+    qp: dict[str, str] = {'detail': detail}
+    if start_period:
+        qp['startPeriod'] = start_period
+    if end_period:
+        qp['endPeriod'] = end_period
+
+    url = f'{base_path}?{urlencode(qp)}'
+
+    filter_rows = []
+    for dim, filters in zip(dimension_order, ordered_dimension_filters):
+        value_str = '+'.join(filters) if filters else '(all values)'
+        filter_rows.append(f'  - `{dim}`: `{value_str}`')
+    filters_md = '\n'.join(filter_rows) if filter_rows else '  - (no filters)'
+
+    curl_cmd = (
+        f'curl -H "Accept: application/vnd.sdmx.data+csv;version=1.0.0" \\\n'
+        f'  "{url}"'
+    )
+
+    return (
+        '\n\n---\n'
+        '## How to reproduce this query\n\n'
+        f'**SDMX URL:**\n```\n{url}\n```\n\n'
+        f'**cURL to download CSV:**\n```bash\n{curl_cmd}\n```\n\n'
+        '**Query breakdown:**\n'
+        f'- Dataflow: `{dataflow_id}`\n'
+        f'- Dimension filters (in datastructure order):\n{filters_md}\n'
+        f'- Period: `{start_period or "n/a"}` → `{end_period or "n/a"}`\n'
+        f'- API response format: SDMX XML (server converts to table); for CSV use the curl above\n'
+    )
+
+
 @handle_tool_errors
 async def handle_get_data(
     arguments: dict[str, Any],
@@ -392,4 +444,14 @@ async def handle_get_data(
     # Step 8: Filter by TIME_PERIOD (workaround for ISTAT endPeriod+1 bug)
     table_data = filter_tsv_by_time_period(table_data, start_period, end_period)
 
-    return [TextContent(type='text', text=table_data)]
+    # Step 9: Append curl command and query explanation
+    curl_info = _build_curl_info(
+        dataflow_id=params.id_dataflow,
+        dimension_order=dimension_order,
+        ordered_dimension_filters=ordered_dimension_filters,
+        start_period=start_period,
+        end_period=end_period,
+        detail=params.detail,
+    )
+
+    return [TextContent(type='text', text=table_data + curl_info)]
