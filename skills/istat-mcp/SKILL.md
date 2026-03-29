@@ -69,8 +69,6 @@ The tool contains 9,142 entries with the full Italian territorial hierarchy (ita
 
 Use the returned codes directly in the `REF_AREA` dimension filter of `get_data`.
 
-> For map visualizations, TopoJSON boundaries matching these territorial levels are available — see [Cartographic Resources](#cartographic-resources).
-
 ---
 
 ### Step 1: Identify Dataflows
@@ -294,20 +292,6 @@ Analyze employment in Italian manufacturing sectors from 2020 to 2023.
 | Malformed query string (404) | Empty dimensions must be `.`; when there is a filter, `.` still follows |
 | Don't know the REF_AREA code | Use `get_territorial_codes` with name or level to find the right code |
 | Error 500 on a dataflow ID | The ID may be a parent container (e.g. `39_493`). Use `discover_dataflows` to find the sub-dataflows (e.g. `39_493_DF_DCIS_CMORTE1_EV_1`) |
-
----
-
-## Cartographic Resources
-
-TopoJSON boundary files for map visualizations are available in the repository:
-
-| File | Level |
-|---|---|
-| [`resources/geo/comuni.topojson`](https://github.com/ondata/istat_mcp_server/tree/main/resources/geo/comuni.topojson) | Comuni |
-| [`resources/geo/province.topojson`](https://github.com/ondata/istat_mcp_server/tree/main/resources/geo/province.topojson) | Province / Città metropolitane |
-| [`resources/geo/regioni.topojson`](https://github.com/ondata/istat_mcp_server/tree/main/resources/geo/regioni.topojson) | Regioni |
-
-Source: ISTAT administrative boundaries 2026 (generalizzati), EPSG:4326.
 
 ---
 
