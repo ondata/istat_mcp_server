@@ -137,20 +137,7 @@ To explore the values of a specific codelist:
   "codelist_id": "CL_ATECO_2007"
 }
 ```
-### Step 3: Understand SDMX Concepts (optional)
-
-**Tool**: `get_concepts`
-
-Use this tool to understand the semantics of the dataflow's concepts (dimensions and attributes).
-
-**When to use it**:
-- To understand the meaning of a dimension (e.g. FREQ = Frequency)
-- To understand the statistical concepts of the ISTAT datawarehouse
-- For documentation and semantic understanding of metadata
-
----
-
-### Step 4: Fetch Data
+### Step 3: Fetch Data
 
 **Tool**: `get_data`
 
@@ -252,10 +239,7 @@ Analyze employment in Italian manufacturing sectors from 2020 to 2023.
 ```
 → We obtain dimensions, valid codes and time range.
 
-### Step 3 — Understand SDMX Concepts (optional)
-
-
-### Step 4 — Retrieve data
+### Step 3 — Retrieve data
 ```json
 {
   "id_dataflow": "149_577_DF_DCSC_OROS_1_1",
