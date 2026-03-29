@@ -22,6 +22,7 @@ from .tools import (
     handle_get_constraints,
     handle_get_data,
     handle_get_structure,
+    handle_search_constraint_values,
 )
 from .utils.tool_helpers import configure_cache_ttls
 from .utils.logging import setup_logging
@@ -129,7 +130,7 @@ def create_server() -> Server:
             ),
             Tool(
                 name='get_constraints',
-                description='Get available constraints (dimension values) for a dataflow with descriptions. Returns all valid values for each dimension.',
+                description='Get compact overview of available dimensions for a dataflow. Returns dimension names, codelist IDs, and value counts (not the values themselves). Use search_constraint_values to find specific codes.',
                 inputSchema={
                     'type': 'object',
                     'properties': {
@@ -139,6 +140,28 @@ def create_server() -> Server:
                         }
                     },
                     'required': ['dataflow_id'],
+                },
+            ),
+            Tool(
+                name='search_constraint_values',
+                description='Search for specific values within a dimension of a dataflow. Use after get_constraints to find codes by text (e.g., search "sicil" in REF_AREA to find the code for Sicily).',
+                inputSchema={
+                    'type': 'object',
+                    'properties': {
+                        'dataflow_id': {
+                            'type': 'string',
+                            'description': "Dataflow ID (e.g., '101_1015_DF_DCSP_COLTIVAZIONI_1')",
+                        },
+                        'dimension': {
+                            'type': 'string',
+                            'description': "Dimension ID to search in (e.g., 'REF_AREA', 'TYPE_OF_CROP')",
+                        },
+                        'search': {
+                            'type': 'string',
+                            'description': "Text to search for in code or description (case-insensitive). Leave empty to list all values.",
+                        },
+                    },
+                    'required': ['dataflow_id', 'dimension'],
                 },
             ),
             Tool(
@@ -244,6 +267,8 @@ def create_server() -> Server:
                 result = await handle_get_structure(arguments, cache_manager, api_client)
             elif name == 'get_constraints':
                 result = await handle_get_constraints(arguments, cache_manager, api_client)
+            elif name == 'search_constraint_values':
+                result = await handle_search_constraint_values(arguments, cache_manager, api_client)
             elif name == 'get_codelist_description':
                 result = await handle_get_codelist_description(
                     arguments, cache_manager, api_client
@@ -278,5 +303,5 @@ def create_server() -> Server:
             logger.info('=' * 80)
             raise
 
-    logger.info('MCP server configured with 7 tools')
+    logger.info('MCP server configured with 8 tools')
     return server

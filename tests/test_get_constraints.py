@@ -124,29 +124,26 @@ async def test_get_constraints_success(mock_cache_manager, mock_api_client):
     import json
     response = json.loads(result[0].text)
     
-    # Verify response structure
+    # Verify compact response structure
     assert response['id_dataflow'] == '101_1015_DF_DCSP_COLTIVAZIONI_1'
-    assert len(response['constraints']) == 3
-    
-    # Verify FREQ dimension
-    freq_dim = response['constraints'][0]
+    assert len(response['dimensions']) == 3
+
+    # Verify FREQ dimension (compact: no values, just count)
+    freq_dim = response['dimensions'][0]
     assert freq_dim['dimension'] == 'FREQ'
     assert freq_dim['codelist'] == 'CL_FREQ'
-    assert len(freq_dim['values']) == 1
-    assert freq_dim['values'][0]['code'] == 'A'
-    assert freq_dim['values'][0]['description_en'] == 'Annual'
-    assert freq_dim['values'][0]['description_it'] == 'Annuale'
-    
+    assert freq_dim['value_count'] == 1
+    assert 'values' not in freq_dim
+
     # Verify TYPE_OF_CROP dimension
-    crop_dim = response['constraints'][1]
+    crop_dim = response['dimensions'][1]
     assert crop_dim['dimension'] == 'TYPE_OF_CROP'
     assert crop_dim['codelist'] == 'CL_AGRI_MADRE'
-    assert len(crop_dim['values']) == 2
-    assert crop_dim['values'][0]['code'] == 'APPLE'
-    assert crop_dim['values'][0]['description_en'] == 'Apples'
-    
+    assert crop_dim['value_count'] == 2
+    assert 'values' not in crop_dim
+
     # Verify TIME_PERIOD dimension
-    time_dim = response['constraints'][2]
+    time_dim = response['dimensions'][2]
     assert time_dim['dimension'] == 'TIME_PERIOD'
     assert time_dim['StartPeriod'] == '2006-01-01T00:00:00'
     assert time_dim['EndPeriod'] == '2026-12-31T23:59:59'
@@ -256,11 +253,9 @@ async def test_get_constraints_missing_codelist(
     import json
     response = json.loads(result[0].text)
     
-    # Should have dimension with values but no descriptions
-    assert len(response['constraints']) == 1
-    dim = response['constraints'][0]
+    # Should have dimension with count but no values listed
+    assert len(response['dimensions']) == 1
+    dim = response['dimensions'][0]
     assert dim['dimension'] == 'TEST_DIM'
-    assert len(dim['values']) == 2
-    # Descriptions should be empty since codelist fetch failed
-    assert dim['values'][0]['description_en'] == ''
-    assert dim['values'][0]['description_it'] == ''
+    assert dim['value_count'] == 2
+    assert 'values' not in dim

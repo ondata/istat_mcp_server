@@ -36,6 +36,24 @@ class GetConstraintsInput(BaseModel):
     )
 
 
+class SearchConstraintValuesInput(BaseModel):
+    """Input for search_constraint_values tool."""
+
+    dataflow_id: str = Field(
+        ...,
+        validation_alias=AliasChoices('dataflow_id', 'id_dataflow'),
+        description="Dataflow ID (e.g., '101_1015_DF_DCSP_COLTIVAZIONI_1')",
+    )
+    dimension: str = Field(
+        ...,
+        description="Dimension ID to search in (e.g., 'REF_AREA', 'TYPE_OF_CROP')",
+    )
+    search: str = Field(
+        '',
+        description="Text to search for in code or description (case-insensitive). Leave empty to list all values.",
+    )
+
+
 class GetCodelistDescriptionInput(BaseModel):
     """Input for get_codelist_description tool."""
 
@@ -189,6 +207,22 @@ class ConstraintsOutput(BaseModel):
 
     id_dataflow: str
     constraints: list[DimensionConstraintWithDescriptions | TimeConstraintOutput] = []
+
+
+class CompactDimensionConstraint(BaseModel):
+    """Compact dimension constraint showing only count, not all values."""
+
+    type: Literal['enumerated'] = 'enumerated'
+    dimension: str
+    codelist: str
+    value_count: int
+
+
+class CompactConstraintsOutput(BaseModel):
+    """Compact constraints output — dimensions with counts, not full value lists."""
+
+    id_dataflow: str
+    dimensions: list[CompactDimensionConstraint | TimeConstraintOutput] = []
 
 
 class ConceptInfo(BaseModel):

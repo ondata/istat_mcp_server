@@ -243,7 +243,7 @@ def _extract_constraints_info(constraints_data: dict[str, Any]) -> tuple[list[st
     time_period_start = None
     time_period_end = None
 
-    for constraint in constraints_data.get('constraints', []):
+    for constraint in constraints_data.get('constraints', None) or constraints_data.get('dimensions', []):
         dimension_id = constraint.get('dimension', '')
         
         if dimension_id == 'TIME_PERIOD':
