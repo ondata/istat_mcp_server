@@ -137,6 +137,15 @@ To explore the values of a specific codelist:
   "codelist_id": "CL_ATECO_2007"
 }
 ```
+
+### Optional: Understand SDMX Concepts
+
+**Tool**: `get_concepts`
+
+Use this tool to understand the semantics of the dataflow's concepts (dimensions and attributes) when the meaning of a dimension is unclear from `get_constraints` output alone.
+
+---
+
 ### Step 3: Fetch Data
 
 **Tool**: `get_data`
