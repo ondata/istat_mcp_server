@@ -1,15 +1,14 @@
 """Tool: get_constraints - Get available constraints with descriptions for a dataflow."""
 
 import logging
-from typing import Any
+from typing import Any  # noqa: F401
 
 from mcp.types import TextContent
 
 from ..api.client import ApiClient
 from ..api.models import (
-    CodeValue,
-    ConstraintsOutput,
-    DimensionConstraintWithDescriptions,
+    CompactConstraintsOutput,
+    CompactDimensionConstraint,
     GetConstraintsInput,
     TimeConstraintOutput,
     TimeConstraintValue,
@@ -27,16 +26,6 @@ from ..utils.tool_helpers import (
 )
 
 logger = logging.getLogger(__name__)
-
-def _code_values_without_descriptions(
-    constraint_values: list[Any],
-) -> list[CodeValue]:
-    """Build CodeValue entries when codelist descriptions are unavailable."""
-    return [
-        CodeValue(code=value.value, description_en='', description_it='')
-        for value in constraint_values
-    ]
-
 
 @handle_tool_errors
 async def handle_get_constraints(
@@ -112,10 +101,8 @@ async def handle_get_constraints(
     }
     logger.info(f'Mapped {len(dim_to_codelist)} dimensions to codelists')
 
-    # Step 4: Build output with descriptions
-    output_constraints: list[
-        DimensionConstraintWithDescriptions | TimeConstraintOutput
-    ] = []
+    # Step 4: Build compact output and pre-cache codelists
+    compact_dimensions: list[CompactDimensionConstraint | TimeConstraintOutput] = []
 
     for constraint_dim in constraints.dimensions:
         dimension_id = constraint_dim.dimension
@@ -126,7 +113,7 @@ async def handle_get_constraints(
             and isinstance(constraint_dim.values[0], TimeConstraintValue)
         ):
             time_val = constraint_dim.values[0]
-            output_constraints.append(
+            compact_dimensions.append(
                 TimeConstraintOutput(
                     dimension='TIME_PERIOD',
                     StartPeriod=time_val.StartPeriod,
@@ -134,69 +121,38 @@ async def handle_get_constraints(
                 )
             )
         else:
-            # Regular dimension with values
+            # Regular dimension — pre-cache codelist for search_constraint_values
             codelist_id = dim_to_codelist.get(dimension_id, '')
-
-            # Step 4: Call get_codelist_description internally to get value descriptions
-            # This is equivalent to calling the get_codelist_description tool for each codelist
-            code_values: list[CodeValue] = []
+            value_count = len(constraint_dim.values)
 
             if codelist_id:
                 try:
                     logger.info(
-                        f'Getting codelist {codelist_id} for dimension {dimension_id} '
-                        f'(checks cache first, then API if needed)'
+                        f'Pre-caching codelist {codelist_id} for dimension {dimension_id}'
                     )
-                    codelist = await get_cached_codelist(
-                        cache,
-                        api,
-                        codelist_id,
-                    )
-
-                    # Build code -> description mapping
-                    code_to_desc = {cv.code: cv for cv in codelist.values}
-
-                    # Match constraint values with descriptions
-                    for constraint_val in constraint_dim.values:
-                        code = constraint_val.value
-                        if code in code_to_desc:
-                            code_values.append(code_to_desc[code])
-                        else:
-                            code_values.extend(
-                                _code_values_without_descriptions(
-                                    [constraint_val]
-                                )
-                            )
+                    await get_cached_codelist(cache, api, codelist_id)
                 except Exception as e:
                     logger.warning(
-                        f'Failed to fetch codelist {codelist_id}: {e}'
+                        f'Failed to pre-cache codelist {codelist_id}: {e}'
                     )
-                    code_values = _code_values_without_descriptions(
-                        constraint_dim.values
-                    )
-            else:
-                code_values = _code_values_without_descriptions(
-                    constraint_dim.values
-                )
 
-            output_constraints.append(
-                DimensionConstraintWithDescriptions(
+            compact_dimensions.append(
+                CompactDimensionConstraint(
                     dimension=dimension_id,
                     codelist=codelist_id,
-                    values=code_values,
+                    value_count=value_count,
                 )
             )
 
     # All data is now cached (constraints, datastructure, codelists)
-    # Subsequent calls will not need to fetch from API
+    # Use search_constraint_values to find specific codes
     logger.info(
-        f'Successfully built constraints output for {dataflow_id} '
-        f'with {len(output_constraints)} dimensions (all cached for 1 month)'
+        f'Successfully built compact constraints for {dataflow_id} '
+        f'with {len(compact_dimensions)} dimensions (all cached for 1 month)'
     )
 
-    # Build final output
-    output = ConstraintsOutput(
-        id_dataflow=dataflow_id, constraints=output_constraints
+    output = CompactConstraintsOutput(
+        id_dataflow=dataflow_id, dimensions=compact_dimensions
     )
 
     return format_json_response(output)
