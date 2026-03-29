@@ -22,6 +22,7 @@ from .tools import (
     handle_get_constraints,
     handle_get_data,
     handle_get_structure,
+    handle_get_territorial_codes,
 )
 from .utils.tool_helpers import configure_cache_ttls
 from .utils.logging import setup_logging
@@ -222,6 +223,36 @@ def create_server() -> Server:
                     'properties': {},
                 },
             ),
+            Tool(
+                name='get_territorial_codes',
+                description='Get ISTAT REF_AREA territorial codes by level (italia, ripartizione, regione, provincia, comune) or place name search. Supports filtering by region, province, and capoluogo status. Contains the full territorial hierarchy (9142 entries) with parent-child relationships. Use cases: find REF_AREA codes for get_data queries (e.g. all comuni capoluogo for accident statistics, all provinces in Southern regions for olive oil production, all comuni in a specific province for demographic analysis).',
+                inputSchema={
+                    'type': 'object',
+                    'properties': {
+                        'level': {
+                            'type': 'string',
+                            'description': "Territorial level: 'italia', 'ripartizione', 'regione', 'provincia', 'comune'",
+                        },
+                        'name': {
+                            'type': 'string',
+                            'description': 'Place name to search (substring, case-insensitive)',
+                        },
+                        'region': {
+                            'type': 'string',
+                            'description': "Filter by region name or code (e.g. 'Lombardia', 'ITC4')",
+                        },
+                        'province': {
+                            'type': 'string',
+                            'description': "Filter by province name or code (e.g. 'Milano', 'ITC45')",
+                        },
+                        'capoluogo': {
+                            'type': 'boolean',
+                            'description': 'If true, return only comuni that are capoluogo di provincia',
+                            'default': False,
+                        },
+                    },
+                },
+            ),
         ]
 
     @server.call_tool()
@@ -254,6 +285,8 @@ def create_server() -> Server:
                 result = await handle_get_data(arguments, cache_manager, api_client, blacklist)
             elif name == 'get_cache_diagnostics':
                 result = await get_cache_diagnostics_handler()
+            elif name == 'get_territorial_codes':
+                result = await handle_get_territorial_codes(arguments)
             else:
                 raise ValueError(f'Unknown tool: {name}')
             
@@ -278,5 +311,5 @@ def create_server() -> Server:
             logger.info('=' * 80)
             raise
 
-    logger.info('MCP server configured with 7 tools')
+    logger.info('MCP server configured with 8 tools')
     return server

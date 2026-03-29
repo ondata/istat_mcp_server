@@ -6,7 +6,7 @@ description: >
   regional/provincial data, unemployment, population, GDP, agriculture, or any other
   ISTAT dataset. Guides the discover -> constraints -> data workflow step by step.
 license: MIT
-compatibility: Requires the istat MCP server to be running (provides 7 tools for ISTAT SDMX API access).
+compatibility: Requires the istat MCP server to be running (provides 8 tools for ISTAT SDMX API access).
 metadata:
   author: ondata
   version: "1.0"
@@ -34,6 +34,7 @@ Always follow this 3-step workflow:
 | 5 | `get_concepts` | Retrieve semantic definitions of SDMX concepts |
 | 6 | `get_data` | Retrieve statistical observations |
 | 7 | `get_cache_diagnostics` | Debug tool to inspect cache status |
+| 8 | `get_territorial_codes` | Lookup REF_AREA codes by level, name, region, province, or capoluogo |
 
 ## Detailed Workflow
 
@@ -262,6 +263,33 @@ Analyze employment in Italian manufacturing sectors from 2020 to 2023.
 | No data returned | Verify that codes exist in the codelist and are compatible with each other |
 | Wrong dimension order | Check `get_constraints` output for the correct order |
 | Malformed query string (404) | Empty dimensions must be `.`; when there is a filter, `.` still follows |
+
+---
+
+## Territorial Codes Lookup
+
+The `get_territorial_codes` tool resolves place names and territorial levels to ISTAT REF_AREA codes. Use it when you need to build dimension filters for `REF_AREA`.
+
+**Parameters:**
+- `level`: one of `italia`, `ripartizione`, `regione`, `provincia`, `comune`
+- `name`: substring search (case-insensitive) across all levels
+- `region`: filter comuni by region name or code
+- `province`: filter comuni by province name or code
+- `capoluogo`: if `true`, return only capoluoghi di provincia
+
+**Examples:**
+
+```json
+{"level": "regione"}
+{"name": "Milano"}
+{"level": "comune", "region": "Lombardia", "capoluogo": true}
+```
+
+The data is stored in a local DuckDB database (`resources/istat_lookup.duckdb`). To rebuild it after ISTAT updates, run:
+
+```bash
+python3 resources/build_territorial_subdivisions.py <itter107_json> [comuni_csv]
+```
 
 ---
 
