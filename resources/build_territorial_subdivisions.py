@@ -62,6 +62,15 @@ ISTAT_DATA_URL = 'https://situas-servizi.istat.it/publish/reportspooljson?pfun=6
 # NUTS1 code → COD_RIP numeric string
 NUTS1_TO_COD_RIP = {'ITC': '1', 'ITD': '2', 'ITE': '3', 'ITF': '4', 'ITG': '5'}
 
+# NUTS1 code → denominazione ripartizione geografica
+NUTS1_TO_DEN_RIP = {
+    'ITC': 'Nord-ovest',
+    'ITD': 'Nord-est',
+    'ITE': 'Centro',
+    'ITF': 'Sud',
+    'ITG': 'Isole',
+}
+
 # Sardegna: dopo la riforma del 2016 i codici comuni cambiano (090xxx → 112xxx ecc.)
 # Il JSON situas-servizi usa i nuovi codici, il CSV ISTAT quelli vecchi → nessun match automatico.
 # Mapping manuale NUTS3 → COD_PROV_STORICO per le province attualmente codificate nel JSON.
@@ -192,20 +201,25 @@ def build_duckdb(codes: dict, comune_to_nuts3: dict, storico_to_nuts3: dict, ist
         nuts3_to_cod_prov.setdefault(nuts3, cod_prov)
     nuts2_to_cod_reg.setdefault('ITG2', '20')  # Sardegna = COD_REG 20
 
+    # Helper: NUTS1 code → den_rip
+    def den_rip(nuts1: str | None) -> str | None:
+        return NUTS1_TO_DEN_RIP.get(nuts1) if nuts1 else None
+
     rows = []
 
-    rows.append(('IT', 'Italia', 'italia', 0, None, None, None, None))
+    rows.append(('IT', 'Italia', 'italia', 0, None, None, None, None, None))
 
     for k, v in {'ITC': 'Nord-ovest', 'ITD': 'Nord-est', 'ITE': 'Centro', 'ITF': 'Sud', 'ITG': 'Isole'}.items():
-        rows.append((k, v, 'ripartizione', 1, 'IT', None, None, NUTS1_TO_COD_RIP.get(k)))
+        rows.append((k, v, 'ripartizione', 1, 'IT', None, None, NUTS1_TO_COD_RIP.get(k), den_rip(k)))
 
     for k, v in codes.items():
         if re.match(r'^IT[A-Z][0-9]$', k):
-            rows.append((k, v, 'regione', 2, k[:3], None, None, nuts2_to_cod_reg.get(k)))
+            rows.append((k, v, 'regione', 2, k[:3], None, None, nuts2_to_cod_reg.get(k), den_rip(k[:3])))
 
     for k, v in all_province_codes.items():
         parent = IT1XX_PARENTS.get(k, k[:4])
-        rows.append((k, v, 'provincia', 3, parent, None, None, nuts3_to_cod_prov.get(k)))
+        nuts1 = IT1XX_PARENTS.get(k, k)[:3]
+        rows.append((k, v, 'provincia', 3, parent, None, None, nuts3_to_cod_prov.get(k), den_rip(nuts1)))
 
     no_parent = 0
     for k, v in codes.items():
@@ -216,7 +230,11 @@ def build_duckdb(codes: dict, comune_to_nuts3: dict, storico_to_nuts3: dict, ist
             rec = istat_data.get(k, {})
             cap_prov = rec.get('cap_prov', False)
             cap_reg = rec.get('cap_reg', False)
-            rows.append((k, v, 'comune', 4, parent, cap_prov, cap_reg, k))
+            nuts1 = parent[:3] if parent else None
+            # IT1XX province parent: es. IT108 → ITC4 → nuts1=ITC
+            if parent and re.match(r'^IT1', parent):
+                nuts1 = IT1XX_PARENTS.get(parent, parent)[:3]
+            rows.append((k, v, 'comune', 4, parent, cap_prov, cap_reg, k, den_rip(nuts1)))
 
     # Remove existing db if present
     if OUTPUT_PATH.exists():
@@ -232,11 +250,12 @@ def build_duckdb(codes: dict, comune_to_nuts3: dict, storico_to_nuts3: dict, ist
             parent_code VARCHAR,
             capoluogo_provincia BOOLEAN,
             capoluogo_regione BOOLEAN,
-            cod_istat VARCHAR
+            cod_istat VARCHAR,
+            den_rip VARCHAR
         )
     ''')
     conn.executemany(
-        'INSERT INTO territorial_subdivisions VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO territorial_subdivisions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         rows,
     )
     conn.execute('CREATE INDEX idx_level ON territorial_subdivisions(level)')
