@@ -45,6 +45,33 @@ If the user asks for a **download URL/link** instead of the data itself, follow 
 | 7 | `get_cache_diagnostics` | Debug tool to inspect cache status |
 | 8 | `get_territorial_codes` | Lookup REF_AREA codes by level, name, region, province, or capoluogo |
 
+## Fast Path: Skip get_constraints with curl
+
+When you already know the codes to use (e.g. common values like `FREQ=A`, `SEX=9`, `REF_AREA` from `get_territorial_codes`) and only need the **dimension order**, use this 2-step curl approach instead of `get_constraints`:
+
+**Step 1 — Get the datastructure ID (~0.8s):**
+```bash
+curl -s "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/{dataflow_id}" | grep -oP 'Ref id="\K[^"]+'
+```
+
+**Step 2 — Get dimensions in order (~0.7s):**
+```bash
+curl -s "https://esploradati.istat.it/SDMXWS/rest/datastructure/IT1/{struct_id}" | grep -oP 'Dimension[^/]* id="\K[^"]+' | grep -v DimensionDescriptor
+```
+
+Total: ~1.5s. Then call `get_data` directly with the dimension order you just discovered.
+
+**When to use this:**
+- You know the code values but not the dimension order
+- You want to skip the full `get_constraints` call (which fetches codelists for every dimension)
+- You're doing exploratory queries with wildcards (omit unknown dimensions from `dimension_filters`)
+
+**When to still use `get_constraints`:**
+- You don't know which codes are valid for a dimension
+- You need human-readable descriptions of codes
+
+---
+
 ## Detailed Workflow
 
 ### Step 0: Resolve Territory (when needed)
@@ -388,6 +415,7 @@ Dettagli:
 | Wrong dimension order | Check `get_constraints` output for the correct order |
 | Malformed query string (404) | Empty dimensions must be `.`; when there is a filter, `.` still follows |
 | Don't know the REF_AREA code | Use `get_territorial_codes` with name or level to find the right code |
+| Don't know the dimensions of a dataflow | Two fast calls (~1.5s total): 1) get structure ID: `curl -s "https://esploradati.istat.it/SDMXWS/rest/dataflow/IT1/{id}"` → grep for `Ref id`; 2) get dimensions in order: `curl -s "https://esploradati.istat.it/SDMXWS/rest/datastructure/IT1/{struct_id}"` → grep for `Dimension` |
 | Error 500 on a dataflow ID | The ID may be a parent container (e.g. `39_493`). Use `discover_dataflows` to find the sub-dataflows (e.g. `39_493_DF_DCIS_CMORTE1_EV_1`) |
 
 ---
