@@ -314,27 +314,27 @@ def _build_curl_info(
 
     url = f'{base_path}?{urlencode(qp)}'
 
+    csv_qp = {**qp, 'format': 'csv'}
+    csv_url = f'{base_path}?{urlencode(csv_qp)}'
+
     filter_rows = []
     for dim, filters in zip(dimension_order, ordered_dimension_filters):
         value_str = '+'.join(filters) if filters else '(all values)'
         filter_rows.append(f'  - `{dim}`: `{value_str}`')
     filters_md = '\n'.join(filter_rows) if filter_rows else '  - (no filters)'
 
-    curl_cmd = (
-        f'curl -H "Accept: application/vnd.sdmx.data+csv;version=1.0.0" \\\n'
-        f'  "{url}"'
-    )
+    curl_cmd = f'curl "{csv_url}"'
 
     return (
         '\n\n---\n'
         '## How to reproduce this query\n\n'
-        f'**SDMX URL:**\n```\n{url}\n```\n\n'
+        f'**CSV URL (open in browser or with cURL):**\n```\n{csv_url}\n```\n\n'
+        f'**SDMX URL (XML):**\n```\n{url}\n```\n\n'
         f'**cURL to download CSV:**\n```bash\n{curl_cmd}\n```\n\n'
         '**Query breakdown:**\n'
         f'- Dataflow: `{dataflow_id}`\n'
         f'- Dimension filters (in datastructure order):\n{filters_md}\n'
         f'- Period: `{start_period or "n/a"}` → `{end_period or "n/a"}`\n'
-        f'- API response format: SDMX XML (server converts to table); for CSV use the curl above\n'
     )
 
 

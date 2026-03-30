@@ -166,7 +166,7 @@ def create_server() -> Server:
             ),
             Tool(
                 name='get_data',
-                description='Fetch actual data from a dataflow in TSV table format. Supports dimension filtering and time ranges. If no time period specified, fetches last complete year.',
+                description='Fetch actual data from a dataflow in TSV table format. Supports dimension filtering and time ranges. If no time period specified, fetches last complete year. Output includes reproducible URLs: a CSV URL (openable in browser via format=csv), the SDMX XML URL, and a curl command.',
                 inputSchema={
                     'type': 'object',
                     'properties': {
