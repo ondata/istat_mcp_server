@@ -54,3 +54,6 @@ htmlcov/
 Thumbs.db
 
 tmp/
+
+# Claude Code (local hooks and settings)
+.claude/
