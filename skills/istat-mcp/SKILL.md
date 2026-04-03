@@ -17,6 +17,10 @@ metadata:
 
 # ISTAT MCP Server - Workflow Guide
 
+## Language Rule
+
+**Always respond in the same language used in the user's request.** If the user writes in Italian, respond in Italian. If the user writes in English, respond in English. Apply this rule consistently to all outputs: summaries, labels, explanations, warnings, and the "Fonti dati" / "Data Sources" closing section.
+
 ## Quick Start
 
 If the query targets a specific territory (region, province, municipality), **start by resolving the territory**:
@@ -403,6 +407,7 @@ Dettagli:
 - **Inspect codelist values** to pick exact, valid codes
 - **Cache is your friend**: metadata cached 1 month, dataflows 7 days, data 1 hour
 - **Never guess REF_AREA codes**: always use `get_territorial_codes` to resolve place names to codes. Territory is often the starting point of any ISTAT query.
+- **Language**: always respond in the same language as the user's request (Italian if asked in Italian, English if asked in English).
 
 ---
 
