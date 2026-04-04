@@ -32,6 +32,21 @@ If the query targets a specific territory (region, province, municipality), **st
 
 Skip step 0 only when the query is about Italy as a whole (`REF_AREA: IT`).
 
+## Time Period Rule
+
+**Default behaviour — last available year.** Unless the user explicitly requests a historical series or a specific period, always use `get_data` **without** `start_period`/`end_period`. The server automatically resolves the last available year from the `TIME_PERIOD` constraint and returns only that year’s data. This keeps responses compact and avoids flooding the context with multi-decade series.
+
+**Historical series — explicit request only.** Use `start_period` / `end_period` only when the user explicitly asks for:
+- a historical trend / serie storica
+- a specific years range ("dal 2015 al 2023", "from 2010 to 2020")
+- all available years / tutti gli anni disponibili
+
+In that case **omit both `start_period` and `end_period`** entirely — the server fetches all years available for that dataflow based on the `TIME_PERIOD` constraint. Alternatively, set them explicitly from the `StartPeriod` and `EndPeriod` values returned by `get_constraints`.
+
+> **Quick decision:**
+> - User asks "quant’è la disoccupazione?" → no periods (last year auto-selected)
+> - User asks "mostrami la serie storica" or "dal 2010" → set `start_period` + `end_period`
+
 ### URL-only mode
 
 If the user asks for a **download URL/link** instead of the data itself, follow steps 0–2 as above, then **skip `get_data`** and build the URL directly. See [Generate Download URL](#generate-download-url-skip-get_data) for the full workflow.
@@ -116,9 +131,21 @@ Use `discover_dataflows` with comma-separated keywords (Italian or English).
 { "keywords": "employment,labour,work" }
 ```
 
-**Output**:  list of dataflows with ID, names (IT/EN), and descriptions.
+**Output**: list of dataflows with ID, names (IT/EN), and descriptions.
 
 Note: dataflows in the blacklist (env var `DATAFLOW_BLACKLIST`) are automatically excluded.
+
+#### Choosing the right dataflow when multiple candidates exist
+
+When `discover_dataflows` returns more than one matching dataflow, **always prefer the one with the most recent data**. To compare them:
+
+1. Call `get_constraints` on each candidate (results are cached, so only the first call hits the API).
+2. Read the `EndPeriod` value of the `TIME_PERIOD` dimension.
+3. **Select the dataflow with the highest (most recent) `EndPeriod`.**
+
+If two dataflows have the same `EndPeriod`, prefer the one whose name or description better matches the user's intent.
+
+> **Example**: if the results include `DF_DCIS_DISOCCUPATI_1` (EndPeriod 2022) and `DF_DCIS_DISOCCUPATI_2` (EndPeriod 2025), always use `DF_DCIS_DISOCCUPATI_2`.
 
 ### Step 2: Retrieve Constraints and Descriptions
 
@@ -191,12 +218,11 @@ This tool makes the final call to the ISTAT endpoint to retrieve observations.
 
 #### Rules for building filters
 
-1. **Time periods**: If no historical series is requested, the tool automatically selects
-   only the last available year. For historical series, specify `start_period` and `end_period`.
+1. **Time periods — default: last available year.** Do NOT set `start_period`/`end_period` unless the user explicitly requests a historical series or a specific range. When omitted, `get_data` automatically selects the last available year from `TIME_PERIOD` constraints. Set periods only when the user asks for historical data or a specific range.
 
 2. **Dimension order**: The order of filters must match the one returned by `get_constraints`.
 
-3. **Dimensions without filter**: Use `.` to indicate "all values".
+3. **Dimensions without filter**: Use `.` to indicate “all values”.
 
 4. **Multiple filters on a dimension**: Concatenate codes with `+` (OR operator).
 
@@ -399,9 +425,9 @@ Dettagli:
 
 - **Always use `get_constraints` before `get_data`** to know the correct dimension order
   and available codes.
+- **Default: last available year** — never set `start_period`/`end_period` unless the user explicitly asks for a historical series or a specific time range. Omitting them lets the server auto-select the last available year, keeping the response compact.
+- **Historical series** — only when explicitly requested: set `start_period` and `end_period` from the `TIME_PERIOD` constraint (or leave both empty to fetch all available years).
 - **Start with few filters** and add more progressively to avoid empty datasets.
-- **For recent data**: omit `start_period`/`end_period` (automatically uses the last year).
-- **For historical series**: always specify the full range.
 - **Dimensions without filter**: always represent with `.`, never omit.
 - **Multiple filters**: concatenate with `+` (e.g. `"ECON_ACTIVITY_NACE_2007": ["0011", "0013"]`).
 - **Inspect codelist values** to pick exact, valid codes
@@ -428,9 +454,37 @@ Dettagli:
 
 ## Output finale
 
-Dopo ogni analisi che usa `get_data`, chiudi SEMPRE con una sezione "Fonti dati" che include:
-- URL CSV di ogni query effettuata (apribili nel browser)
-- Per ogni URL: quali filtri sono stati applicati e quali sono i campi disponibili applicabili alla query
+Dopo ogni analisi che usa `get_data`, chiudi SEMPRE con una sezione **"Fonti dati"** che include obbligatoriamente:
+
+1. **Dataflow utilizzato**
+   - Codice (ID) del dataflow
+   - Nome italiano e inglese
+   - Descrizione (se disponibile)
+
+2. **Query effettuata**
+   - URL CSV completo (apribile nel browser o con curl): già incluso nell'output di `get_data`
+   - Filtri applicati per ogni dimensione (dimensione → codice/i usati)
+   - Periodo richiesto (`start_period` → `end_period`, oppure "ultimo anno disponibile")
+
+3. **Struttura del risultato**
+   - Campi presenti nel TSV restituito
+   - Eventuali avvertenze (es. dati non disponibili per alcune combinazioni di filtri)
+
+**Formato minimo obbligatorio** (adatta la lingua alla richiesta):
+
+```
+## Fonti dati
+
+**Dataflow**: `{id_dataflow}` — {nome_it} / {nome_en}
+{descrizione, se disponibile}
+
+**Query**:
+- URL CSV: {csv_url}
+- Filtri: {dimensione}: {codici}, ...
+- Periodo: {start_period} → {end_period} oppure "ultimo anno disponibile ({anno})"
+
+**Campi disponibili**: {lista colonne del TSV}
+```
 
 ---
 
