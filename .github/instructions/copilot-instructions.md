@@ -1,7 +1,7 @@
 # Copilot Instructions — MCP Server: istat_mcp_server
 
 ## Goal
-This MCP server exposes data from the ISTAT SDMX API (https://esploradati.istat.it/SDMXWS/rest/) to Claude Desktop. It implements a two-layer caching mechanism (in-memory + persistent) to minimize API calls and provides **eight tools** for discovering, querying, and retrieving Italian statistical data. All tool inputs are validated with Pydantic, errors are handled gracefully, and the caching mechanism is implemented with appropriate TTLs. The server follows best practices for code organization, error handling, and documentation.
+This MCP server exposes data from the ISTAT SDMX API (https://esploradati.istat.it/SDMXWS/rest/) to Claude Desktop. It implements a two-layer caching mechanism (in-memory + persistent) to minimize API calls and provides **eight tools** for discovering, querying, and retrieving Italian statistical data. A companion **CLI layer** (`src/istat_mcp_server/cli/`) exposes lightweight commands for offline use and internal tool delegation. All tool inputs are validated with Pydantic, errors are handled gracefully, and the caching mechanism is implemented with appropriate TTLs. The server follows best practices for code organization, error handling, and documentation.
 
 ## General Principles
 
@@ -72,13 +72,16 @@ The server acts as a bridge between Claude and the **ISTAT SDMX API** (https://e
 │       │   ├── manager.py     # Cache façade — unified get/set/invalidate interface
 │       │   ├── memory.py      # In-memory cache (TTL-based, e.g. cachetools)
 │       │   └── persistent.py  # Disk/DB cache for data and metadata
+│       ├── cli/
+│       │   ├── __init__.py
+│       │   └── get_concepts_cli.py        # CLI: cerca concept per ID, stampa JSON su stdout
 │       ├── tools/
 │       │   ├── __init__.py
 │       │   ├── discover_dataflows.py      # Dataflow discovery with blacklist filtering
 │       │   ├── get_structure.py           # Datastructure definitions
 │       │   ├── get_constraints.py         # Constraints + descriptions (3-in-1 tool)
 │       │   ├── get_codelist_description.py # Codelist descriptions
-│       │   ├── get_concepts.py            # SDMX concept definitions
+│       │   ├── get_concepts.py            # MCP tool: wraps CLI via subprocess
 │       │   ├── get_data.py                # Data fetching with blacklist validation
 │       │   ├── get_cache_diagnostics.py   # Cache inspection tool
 │       │   └── get_territorial_codes.py   # REF_AREA lookup via DuckDB
@@ -114,6 +117,7 @@ The server acts as a bridge between Claude and the **ISTAT SDMX API** (https://e
 | Capability | Included | Notes |
 |------------|----------|-------|
 | Tools      | ✅       | 8 tools: `discover_dataflows`, `get_structure`, `get_constraints`, `get_codelist_description`, `get_concepts`, `get_data`, `get_cache_diagnostics`, `get_territorial_codes` |
+| CLI        | ✅       | `istat-get-concepts-cli` — command-line lookup per concept ID (wrappato da `get_concepts`) |
 | Resources  | ❌       | Not implemented yet |
 | Prompts    | ❌       | Not implemented yet |
 | Sampling   | ❌       | Not used |
@@ -122,6 +126,21 @@ The server acts as a bridge between Claude and the **ISTAT SDMX API** (https://e
 ---
 
 ## Recent Changes (April 2026)
+
+### Refactoring `get_concepts` — CLI + MCP wrapper (April 5-6, 2026)
+- **Restructured**: `get_concepts` è ora suddiviso in due livelli:
+  - **CLI** (`src/istat_mcp_server/cli/get_concepts_cli.py`): comando standalone `istat-get-concepts-cli <concept_id>`
+    - Accetta un `concept_id` come argomento posizionale
+    - Controlla la cache persistente (TTL 1 mese) — se mancante, chiama `GET /conceptscheme` e popola la cache
+    - Output JSON su stdout: `{"concept_id": "...", "found": true, "name_it": "...", "name_en": "...", "scheme_id": "..."}`
+    - Registrato come console script in `pyproject.toml`: `istat-get-concepts-cli`
+  - **MCP tool** (`src/istat_mcp_server/tools/get_concepts.py`): wrappa il CLI via `asyncio.create_subprocess_exec`
+    - Input: `concept_id` (required), `lang` (`'it'` o `'en'`, default `'it'`)
+    - Lancia `python -m istat_mcp_server.cli.get_concepts_cli <concept_id>` come subprocess
+    - Legge il JSON di output (equivalente a `bash_tool + jq .name_it`)
+    - Ritorna la singola stringa di descrizione come `TextContent`
+- **Rimosso**: il vecchio `cli/get_concepts.py` (che stampava tutti gli scheme senza filtro per concept_id)
+- **Invariato**: cache chiave `api:conceptschemes:all`, TTL 1 mese, condivisa tra CLI e server MCP
 
 ### Token Optimization — `get_data` refactoring (April 3, 2026)
 - **Changed**: `get_data` no longer calls `handle_get_constraints` internally
@@ -198,7 +217,7 @@ The server acts as a bridge between Claude and the **ISTAT SDMX API** (https://e
 
 ### Testing
 
-**Total**: 66 pytest tests (0.18s)
+**Total**: 76 pytest tests (0.20s)
 
 **Test Breakdown**:
 - 12 tests for blacklist system (`test_blacklist.py`)
@@ -206,6 +225,7 @@ The server acts as a bridge between Claude and the **ISTAT SDMX API** (https://e
 - 2 tests for API client (`test_client.py`)
 - 3 tests for cache diagnostics (`test_get_cache_diagnostics.py`)
 - 4 tests for get_constraints tool (`test_get_constraints.py`)
+- 10 tests for get_concepts tool (`test_get_concepts.py`)
 - 21 tests for get_data tool (`test_get_data.py`)
 - 13 tests for get_territorial_codes tool (`test_get_territorial_codes.py`)
 - 5 tests for Pydantic models (`test_models.py`)
@@ -593,63 +613,48 @@ For dataflow `22_315_DF_DCIS_POPORESBIL1_2` with dimensions `[FREQ, REF_AREA, IN
 
 ### Tool 6: `get_concepts`
 
-**Description**: Gets semantic definitions of SDMX concepts used across ISTAT dataflows. Returns concept schemes with Italian and English descriptions for all concepts (dimensions, attributes, measures). This is useful for understanding the meaning of dimension IDs and their semantic context. Results are cached for 1 month.
+**Description**: Gets the Italian or English description of a single ISTAT SDMX concept by its ID. Internally calls the CLI `get_concepts_cli` via subprocess (bash_tool + jq pattern). Results are cached for 1 month.
 
-**API Endpoint**: `https://esploradati.istat.it/SDMXWS/rest/conceptscheme/IT1/all`
+**Architecture**: MCP tool → subprocess → CLI (`istat-get-concepts-cli`) → disk cache → ISTAT API (on miss)
 
-**Cache TTL**: 1 month (2592000 seconds)
+**API Endpoint (indirect)**: `https://esploradati.istat.it/SDMXWS/rest/conceptscheme` (called by CLI only on cache miss)
+
+**Cache TTL**: 1 month (2592000 seconds) — chiave `api:conceptschemes:all`, condivisa tra CLI e server
 
 **Input Schema**:
 ```python
-# No input parameters - returns all concept schemes
+class GetConceptsInput(BaseModel):
+    concept_id: str = Field(..., description="Concept ID (e.g. 'AGRIT_AUTHORIZATION')")
+    lang: str = Field('it', description="Language: 'it' or 'en'")
 ```
 
 **Implementation Details**:
-- Fetch XML from API endpoint
-- Parse all `<structure:ConceptScheme>` elements
-- For each concept scheme, extract:
-  - `id`: Concept scheme ID
-  - `concepts`: List of concept definitions
-    - `id`: Concept ID (e.g., FREQ, REF_AREA, OBS_VALUE)
-    - `name_en`: English name/description
-    - `name_it`: Italian name/description
-- Return JSON structure:
+- Valida input con `GetConceptsInput`
+- Lancia subprocess: `sys.executable -m istat_mcp_server.cli.get_concepts_cli <concept_id>`
+- Il CLI controlla la cache; se mancante scarica e persiste tutti gli scheme
+- Legge stdout JSON e estrae `name_it` o `name_en` (equivalente a `jq .name_it`)
+- Se concept non trovato restituisce messaggio d'errore
+- Ritorna la singola descrizione come `TextContent`
+
+**CLI** (`src/istat_mcp_server/cli/get_concepts_cli.py`):
+- Invocabile come `istat-get-concepts-cli <concept_id>` (dopo `pip install -e .`)
+- Output JSON su stdout:
   ```json
-  {
-    "concept_schemes": [
-      {
-        "id": "IT1_CONCEPT_SCHEME",
-        "concepts": [
-          {
-            "id": "FREQ",
-            "name_en": "Frequency",
-            "name_it": "Frequenza"
-          },
-          {
-            "id": "REF_AREA",
-            "name_en": "Reference area",
-            "name_it": "Area di riferimento"
-          },
-          {
-            "id": "NOTE_INFORM_TECH_LEVEL",
-            "name_en": "IT level",
-            "name_it": "Informatizzazione"
-          }
-        ]
-      }
-    ]
-  }
+  {"concept_id": "AGRIT_AUTHORIZATION", "found": true,
+   "name_it": "Tipo di autorizzazione agrituristica",
+   "name_en": "Kind of agri-tourism authorization",
+   "scheme_id": "CS_AGRITUR"}
   ```
+- Se non trovato: `{"concept_id": "...", "found": false}`
 
 **Handler**: `src/istat_mcp_server/tools/get_concepts.py::handle_get_concepts()`
 
-**Model**: `api.models.ConceptSchemeInfo` with `list[ConceptInfo]`
+**Model**: `api.models.ConceptSchemeInfo` / `api.models.ConceptInfo` (usati dal CLI)
 
 **Use Cases**:
-- Understand the semantic meaning of dimensions
-- Document dataflow metadata
-- Map SDMX concepts to business terminology
-- Learn ISTAT's statistical concepts and their translations
+- Capire il significato semantico di un dimension ID
+- Tradurre codici SDMX in descrizioni leggibili (IT/EN)
+- Usato da Claude per disambiguare concetti senza caricare tutti gli scheme in contesto
 
 ---
 

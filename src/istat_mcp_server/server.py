@@ -158,10 +158,21 @@ def create_server() -> Server:
             ),
             Tool(
                 name='get_concepts',
-                description='Get all concept schemes and their concepts with descriptions. Shows all available concepts used in the ISTAT datawarehouse.',
+                description='Get the Italian or English description of an ISTAT SDMX concept by its ID. Uses cached concept schemes (TTL 1 month). Returns a single description string.',
                 inputSchema={
                     'type': 'object',
-                    'properties': {},
+                    'properties': {
+                        'concept_id': {
+                            'type': 'string',
+                            'description': "Concept ID (e.g. 'AGRIT_AUTHORIZATION')",
+                        },
+                        'lang': {
+                            'type': 'string',
+                            'description': "Language: 'it' (default) or 'en'",
+                            'default': 'it',
+                        },
+                    },
+                    'required': ['concept_id'],
                 },
             ),
             Tool(

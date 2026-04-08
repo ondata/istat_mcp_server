@@ -17,9 +17,20 @@ metadata:
 
 # ISTAT MCP Server - Workflow Guide
 
-## Language Rule
+## Language Detection — First Step (mandatory)
 
-**Always respond in the same language used in the user's request.** If the user writes in Italian, respond in Italian. If the user writes in English, respond in English. Apply this rule consistently to all outputs: summaries, labels, explanations, warnings, and the "Fonti dati" / "Data Sources" closing section.
+**Before doing anything else, detect the language of the user's first message.**
+
+| User writes in | Set | Apply to |
+|---|---|---|
+| Italian | `lang=it` | all responses, labels, summaries, warnings, `get_concepts` calls, "Fonti dati" section |
+| English | `lang=en` | all responses, labels, summaries, warnings, `get_concepts` calls, "Data Sources" section |
+
+**Rules:**
+- Detect once at the start; keep `lang` fixed for the entire conversation even if the user later switches language.
+- Every response — including tool-call summaries, warnings, and the closing data-sources section — must use the detected language.
+- When calling `get_concepts`, always pass `"lang": "<detected>"` (e.g. `{"concept_id": "FREQ", "lang": "it"}`).
+- If the language cannot be determined (e.g. the first message is a bare dataflow ID), default to `lang=it`.
 
 ## Quick Start
 
@@ -59,7 +70,7 @@ If the user asks for a **download URL/link** instead of the data itself, follow 
 | 2 | `get_constraints` | Retrieve constraints + structure + descriptions in one call |
 | 3 | `get_structure` | Retrieve dimensions and codelists definitions |
 | 4 | `get_codelist_description` | Retrieve IT/EN descriptions for codelist values |
-| 5 | `get_concepts` | Retrieve semantic definitions of SDMX concepts |
+| 5 | `get_concepts` | Retrieve the IT or EN description of an SDMX concept by ID — always pass `lang` detected at conversation start |
 | 6 | `get_data` | Retrieve statistical observations |
 | 7 | `get_cache_diagnostics` | Debug tool to inspect cache status |
 | 8 | `get_territorial_codes` | Lookup REF_AREA codes by level, name, region, province, or capoluogo |
@@ -206,7 +217,13 @@ To explore the values of a specific codelist:
 
 **Tool**: `get_concepts`
 
-Use this tool to understand the semantics of the dataflow's concepts (dimensions and attributes) when the meaning of a dimension is unclear from `get_constraints` output alone.
+Use this tool to understand the semantics of the dataflow's concepts (dimensions and attributes) when the meaning of a dimension is unclear from `get_constraints` output alone. **Always pass the `lang` detected at conversation start:**
+
+```json
+{ "concept_id": "AGRIT_AUTHORIZATION", "lang": "it" }
+```
+
+The tool returns a single description string in the requested language.
 
 ---
 
@@ -434,7 +451,7 @@ Dettagli:
 - **Cache is your friend**: metadata cached 1 month · dataflows 7 days · observed data 24h (1 day)
 - **`get_data` is lean by design**: it reads only raw constraints from cache (dimension order + TIME_PERIOD range) without loading codelist descriptions. Codelist descriptions are only fetched when `get_constraints` is called explicitly. The processed TSV is cached directly, so cache hits return the ready-to-use table with no re-parsing.
 - **Never guess REF_AREA codes**: always use `get_territorial_codes` to resolve place names to codes. Territory is often the starting point of any ISTAT query.
-- **Language**: always respond in the same language as the user's request (Italian if asked in Italian, English if asked in English).
+- **Always show data sources**: after every `get_data` call, close with a "Fonti dati" / "Data Sources" section that includes: dataflow ID + name, CSV URL and curl command (from `get_data` output → "How to reproduce this query"), filters per dimension, and period used. Never omit the curl command — it lets the user replicate the query independently.
 
 ---
 
@@ -452,39 +469,59 @@ Dettagli:
 
 ---
 
-## Output finale
+## Output finale / Data Sources
 
-Dopo ogni analisi che usa `get_data`, chiudi SEMPRE con una sezione **"Fonti dati"** che include obbligatoriamente:
+Dopo ogni analisi che usa `get_data`, chiudi SEMPRE con una sezione il cui titolo dipende dalla lingua rilevata:
+- `lang=it` → **"Fonti dati"**
+- `lang=en` → **"Data Sources"**
 
-1. **Dataflow utilizzato**
-   - Codice (ID) del dataflow
-   - Nome italiano e inglese
-   - Descrizione (se disponibile)
+### Cosa mostrare
 
-2. **Query effettuata**
-   - URL CSV completo (apribile nel browser o con curl): già incluso nell'output di `get_data`
-   - Filtri applicati per ogni dimensione (dimensione → codice/i usati)
-   - Periodo richiesto (`start_period` → `end_period`, oppure "ultimo anno disponibile")
+L'output di `get_data` include già in coda una sezione **"How to reproduce this query"** con:
+- CSV URL (apribile nel browser)
+- SDMX URL (XML grezzo)
+- comando `curl` per scaricare il CSV
+- breakdown dei filtri per dimensione
 
-3. **Struttura del risultato**
-   - Campi presenti nel TSV restituito
-   - Eventuali avvertenze (es. dati non disponibili per alcune combinazioni di filtri)
+**Non ricostruire queste informazioni da zero.** Riportale direttamente dalla sezione "How to reproduce this query" presente nell'output di `get_data`, aggiungendo solo le informazioni mancanti elencate sotto.
 
-**Formato minimo obbligatorio** (adatta la lingua alla richiesta):
+### Formato obbligatorio
 
-```
-## Fonti dati
+Adatta l'intestazione alla lingua rilevata (`lang=it` → "Fonti dati", `lang=en` → "Data Sources").
+
+````
+## Fonti dati          ← oppure "Data Sources" se lang=en
 
 **Dataflow**: `{id_dataflow}` — {nome_it} / {nome_en}
-{descrizione, se disponibile}
+{descrizione breve, se disponibile da discover_dataflows}
 
-**Query**:
-- URL CSV: {csv_url}
-- Filtri: {dimensione}: {codici}, ...
-- Periodo: {start_period} → {end_period} oppure "ultimo anno disponibile ({anno})"
+**Query** *(from get_data output)*:
 
-**Campi disponibili**: {lista colonne del TSV}
 ```
+{csv_url}
+```
+
+```bash
+curl "{csv_url}"
+```
+
+**Filtri applicati** *(dimension order from get_constraints)*:
+- `{DIM1}`: `{codice/i}`
+- `{DIM2}`: `{codice/i}` — *(all values)* se non filtrata
+- ...
+- Periodo: `{start_period}` → `{end_period}` oppure "ultimo anno disponibile ({anno})"
+
+**Campi nel risultato**: {lista colonne TSV, separata da virgole}
+{Eventuali avvertenze, es. "Nessun dato per alcune combinazioni di filtri"}
+````
+
+### Regole
+
+1. **Dataflow sempre nominato**: mostra sempre `id_dataflow` + nome (IT se `lang=it`, EN se `lang=en`). Se disponibile dalla risposta di `discover_dataflows`, includi anche la descrizione.
+2. **CSV URL e curl sempre presenti**: copiati dall'output di `get_data` → sezione "How to reproduce this query". Non ricostruire l'URL a mano.
+3. **Filtri sempre esplicitati**: lista ogni dimensione con i codici usati. Se una dimensione non è filtrata, scrivi `(all values)`.
+4. **Periodo sempre indicato**: se `start_period`/`end_period` sono stati passati, mostrali; altrimenti scrivi "ultimo anno disponibile" con l'anno effettivo leggibile dal TSV.
+5. **Più dataflow**: se la risposta combina più chiamate `get_data`, ripeti il blocco per ciascun dataflow.
 
 ---
 
