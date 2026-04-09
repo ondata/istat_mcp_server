@@ -108,7 +108,7 @@ class ApiClient:
         self._availableconstraint_timeout = availableconstraint_timeout
         self._max_retries = max_retries
         self._client = httpx.AsyncClient(timeout=timeout)
-        self._rate_limiter = RateLimiter(max_calls=3, time_window=60.0)
+        self._rate_limiter = RateLimiter(max_calls=4, time_window=60.0)
         logger.info(f'ApiClient initialized: {base_url}')
 
     @retry(

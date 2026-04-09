@@ -21,7 +21,7 @@ This MCP server exposes data from the ISTAT SDMX API (https://esploradati.istat.
 - All I/O operations must be **async/await** (API calls, cache reads/writes)
 
 ### API Usage
-- **Rate limiting**: Maximum 3 API calls per minute (enforced by `RateLimiter` in `ApiClient`)
+- **Rate limiting**: Maximum 4 API calls per minute (enforced by `RateLimiter` in `ApiClient`)
 - Implement proper error handling and retries with exponential backoff
 - Never hit live API endpoints in tests — always mock API calls
 - Use the shared `ApiClient` instance passed to tool handlers
