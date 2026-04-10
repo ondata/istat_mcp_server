@@ -1,3 +1,5 @@
+[![deepwiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ondata/istat_mcp_server)
+
 # ISTAT MCP Server
 
 [English](README.md) | [Italiano](./README_IT.md)
