@@ -305,8 +305,8 @@ ruff check .
 │       │   ├── get_codelist_description.py
 │       │   ├── get_concepts.py       # wrappa il CLI via subprocess
 │       │   ├── get_data.py
-       │   ├── get_cache_diagnostics.py
-       │   └── get_territorial_codes.py
+│       │   ├── get_cache_diagnostics.py
+│       │   └── get_territorial_codes.py
 │       └── utils/             # Utility
 │           ├── logging.py
 │           ├── validators.py

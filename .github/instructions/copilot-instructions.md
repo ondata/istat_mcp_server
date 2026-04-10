@@ -21,7 +21,7 @@ This MCP server exposes data from the ISTAT SDMX API (https://esploradati.istat.
 - All I/O operations must be **async/await** (API calls, cache reads/writes)
 
 ### API Usage
-- **Rate limiting**: Maximum 4 API calls per minute (enforced by `RateLimiter` in `ApiClient`)
+- **Rate limiting**: Maximum 3 API calls per minute (enforced by `RateLimiter` in `ApiClient`)
 - Implement proper error handling and retries with exponential backoff
 - Never hit live API endpoints in tests — always mock API calls
 - Use the shared `ApiClient` instance passed to tool handlers
@@ -52,6 +52,7 @@ The server acts as a bridge between Claude and the **ISTAT SDMX API** (https://e
 - **Retry Logic**: `tenacity` ≥ 8.2.0 (exponential backoff)
 - **Validation**: `pydantic` ≥ 2.0.0 (input/output models)
 - **Config**: `python-dotenv` ≥ 1.0.0 (environment variables)
+- **Territorial Lookup**: `duckdb` ≥ 1.0.0 (local DB for REF_AREA code resolution)
 
 ---
 
@@ -99,6 +100,7 @@ The server acts as a bridge between Claude and the **ISTAT SDMX API** (https://e
 │   ├── test_cache.py                      # Cache layer tests (4 tests)
 │   ├── test_client.py                     # API client tests (2 tests)
 │   ├── test_get_cache_diagnostics.py      # get_cache_diagnostics tests (3 tests)
+│   ├── test_get_concepts.py               # get_concepts tool tests (10 tests)
 │   ├── test_get_constraints.py            # get_constraints tool tests (4 tests)
 │   ├── test_get_data.py                   # get_data tool tests (21 tests)
 │   ├── test_get_territorial_codes.py      # get_territorial_codes tests (13 tests)
