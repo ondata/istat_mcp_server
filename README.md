@@ -1,4 +1,5 @@
 [![deepwiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ondata/istat_mcp_server)
+[![Newsletter](https://img.shields.io/badge/newsletter-ondata-FF6719?logo=substack)](https://ondata.substack.com/)
 
 # ISTAT MCP Server
 
