@@ -28,7 +28,7 @@ jobs:
         with:
           path: site
           node-version: 20
-          package-manager: npm@latest
+          package-manager: npm@10
 
   deploy:
     needs: build

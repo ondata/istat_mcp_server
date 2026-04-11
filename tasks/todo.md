@@ -4,26 +4,26 @@
 Single page IT + single page EN che descrive il progetto, stile Airbnb (DESIGN.md), Astro, deploy su GitHub Pages.
 
 ## Fase 1 — Scaffolding
-- [ ] Creare directory `site/` alla root del repo (isolata, non interferisce col progetto Python)
-- [ ] Init Astro minimale: `package.json`, `astro.config.mjs`, `tsconfig.json`
-- [ ] Config `base` e `site` in `astro.config.mjs` per GitHub Pages (`/istat_mcp_server/`)
-- [ ] `.gitignore` per `node_modules`, `dist`, `.astro`
+- [x] Creare directory `site/` alla root del repo (isolata, non interferisce col progetto Python)
+- [x] Init Astro minimale: `package.json`, `astro.config.mjs`, `tsconfig.json`
+- [x] Config `base` e `site` in `astro.config.mjs` per GitHub Pages (`/istat_mcp_server/`)
+- [x] `.gitignore` per `node_modules`, `dist`, `.astro`
 
 ## Fase 2 — Design system (DESIGN.md → CSS)
-- [ ] `src/styles/global.css` con token CSS: colori (#ff385c, #222222, #f2f2f2), radius (8/14/20/32), shadow 3-layer, font-stack Cereal→fallback system
-- [ ] Layout base `src/layouts/Base.astro`: header sticky bianco, footer
-- [ ] Componenti riutilizzabili: `Hero.astro`, `FeatureCard.astro`, `ToolCard.astro`, `CTAButton.astro`, `LangSwitch.astro`
+- [x] `src/styles/global.css` con token CSS: colori (#ff385c, #222222, #f2f2f2), radius (8/14/20/32), shadow 3-layer, font-stack Cereal→fallback system
+- [x] Layout base `src/layouts/Base.astro`: header sticky bianco, footer
+- [x] Componenti riutilizzabili: `Hero.astro`, `FeatureCard.astro`, `ToolCard.astro`, `CTAButton.astro`, `LangSwitch.astro`
 
 ## Fase 3 — Contenuti
-- [ ] `src/pages/index.astro` (EN): hero + overview + 8 tools grid + workflow + install + link GitHub
-- [ ] `src/pages/it.astro` (IT): stessa struttura, contenuti da `README_IT.md`
-- [ ] Language switch EN ⇄ IT in header
-- [ ] Badge newsletter + deepwiki + GitHub
+- [x] `src/pages/index.astro` (EN): hero + overview + 8 tools grid + workflow + install + link GitHub
+- [x] `src/pages/it.astro` (IT): stessa struttura, contenuti da `README_IT.md`
+- [x] Language switch EN ⇄ IT in header
+- [x] Badge newsletter + deepwiki + GitHub
 
 ## Fase 4 — Deploy GitHub Pages
-- [ ] `.github/workflows/deploy-site.yml` con action ufficiale Astro (`withastro/action@v3`)
-- [ ] Trigger: push su `main` con path filter `site/**`
-- [ ] Permissions: `pages: write`, `id-token: write`
+- [x] `.github/workflows/deploy-site.yml` con action ufficiale Astro (`withastro/action@v3`)
+- [x] Trigger: push su `main` con path filter `site/**`
+- [x] Permissions: `pages: write`, `id-token: write`
 
 ## Fase 5 — Guida utente (config repo)
 Istruzioni per te:
@@ -52,6 +52,6 @@ Istruzioni per te:
 2. Merge PR → workflow gira → sito live su `https://ondata.github.io/istat_mcp_server/`
 
 **Note:**
-- Branch `docs/newsletter-badge` cancellato (locale + remoto) perché già mergiato
+- Branch `docs/newsletter-badge` cancellato (locale + remoto) perché già mergeato
 - Font "Airbnb Cereal VF" non è open: il CSS cade su Circular / system-ui, mantenendo il feel
 

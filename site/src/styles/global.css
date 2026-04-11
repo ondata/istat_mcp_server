@@ -219,8 +219,13 @@ p {
   border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   text-decoration: none;
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--rausch);
+  outline-offset: 2px;
 }
 
 .btn-primary {
