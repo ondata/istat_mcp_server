@@ -45,7 +45,7 @@ Skip step 0 only when the query is about Italy as a whole (`REF_AREA: IT`).
 
 ## Time Period Rule
 
-**Default behaviour — last available year** Unless the user explicitly requests a time series or a specific period, always use `get_data` **without** `start_period`/`end_period` and **with** `lastNObservations=1` . Using `lastNObservations=1` returns only the last available observation. This keeps responses compact and avoids flooding the context with multi-decade series.
+**Default behaviour — last available year, month or quarter.** Unless the user explicitly requests a time series or a specific period, always use `get_data` **without** `start_period`/`end_period` and **with** `lastNObservations=1` . Using `lastNObservations=1` returns only the last available observation. This keeps responses compact and avoids flooding the context with multi-decade series.
 
 **Time series — explicit request.** Use `start_period` / `end_period` only when the user explicitly asks for:
 
@@ -60,7 +60,7 @@ In that case **omit both `start_period` and `end_period`** entirely — the serv
 > - User asks "quali sono i dati sulla disoccupazione?" → no periods but `lastNObservations=1`
 > - User asks "mostrami la serie storica dal 2010 al 2026" → set `start_period` + `end_period`
 > - User asks "mostrami la serie storica dal 2015" → set `start_period` only, leave `end_period` empty
-> - User asks "dammi la serie storica" → omit both `start_period` and `end_period`
+> - User asks "dammi la serie storica completa" → omit both `start_period` and `end_period`
 
 
 
@@ -81,7 +81,7 @@ See [Generate Download URL](#generate-download-url) for the full workflow.
 | 7 | `get_cache_diagnostics` | Debug tool to inspect cache status |
 | 8 | `get_territorial_codes` | Lookup REF_AREA codes by level, name, region, province, or capoluogo |
 
-## Fast Path: Skip get_constraints with curl
+## Fast Path: Skip get_constraints when get_constraints fails
 
 When you already know the codes to use (e.g. common values like `FREQ=A`, `SEX=9`, `REF_AREA` from `get_territorial_codes`) and only need the **dimension order**, you can use `get_structure` passing `id_datastructure` associated with the `id_dataflow` from `discover_dataflows` instead `get_constraints`:
 
@@ -128,7 +128,7 @@ The tool contains 9,142 entries with the full Italian territorial hierarchy (ita
 
 Use the returned codes directly in the `REF_AREA` dimension filter of `get_data`.
 
-IF the user query is about Italy as a whole or the territorial reference is missing, skip this step and use `REF_AREA: IT` in `get_data`.
+IF the user query is about Italy as a whole, skip this step and use `REF_AREA: IT` in `get_data`.
 
 ---
 
@@ -433,6 +433,13 @@ Dettagli:
 - If the dimension path becomes very long, the URL is still valid — SDMX handles long query strings
 - Always validate codes against `get_constraints` output before building the URL
 - Use `get_territorial_codes` to resolve territory names to REF_AREA codes — never guess
+
+---
+### Visualization
+
+**Age pyramid:**
+
+The age pyramid display is only used when displaying the population by gender and age group for a given year. The pyramid should be displayed so that the highest age values ​​are at the top and the age group starting at zero years at the bottom.
 
 ---
 
