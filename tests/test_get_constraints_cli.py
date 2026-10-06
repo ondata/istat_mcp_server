@@ -1,7 +1,7 @@
 """Tests for get-constraints-cli."""
 
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -12,6 +12,15 @@ from istat_mcp_server.api.models import (
     TimeConstraintOutput,
 )
 from istat_mcp_server.cli import get_constraints_cli
+
+
+@pytest.fixture(autouse=True)
+def no_real_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`_run` builds a real CacheManager/ApiClient; stub them so a test never opens the cache."""
+    monkeypatch.setattr(get_constraints_cli, 'MemoryCache', lambda **kwargs: MagicMock())
+    monkeypatch.setattr(get_constraints_cli, 'PersistentCache', lambda **kwargs: MagicMock())
+    monkeypatch.setattr(get_constraints_cli, 'CacheManager', lambda *args: MagicMock())
+    monkeypatch.setattr(get_constraints_cli, 'ApiClient', lambda **kwargs: MagicMock())
 
 
 def _output(dataflow_id: str = 'DCIS_POPRES1') -> ConstraintsOutput:
@@ -38,7 +47,7 @@ def _output(dataflow_id: str = 'DCIS_POPRES1') -> ConstraintsOutput:
 
 
 @pytest.mark.asyncio
-async def test_run_prints_every_dimension(mock_cache_manager, mock_api_client, capsys):
+async def test_run_prints_every_dimension(capsys):
     """Without --dimension the CLI prints the same JSON the MCP tool returns."""
     with patch.object(
         get_constraints_cli,
@@ -62,7 +71,7 @@ async def test_run_prints_every_dimension(mock_cache_manager, mock_api_client, c
 
 
 @pytest.mark.asyncio
-async def test_run_filters_one_dimension(mock_cache_manager, mock_api_client, capsys):
+async def test_run_filters_one_dimension(capsys):
     """--dimension keeps only that dimension, and does not care about case."""
     with patch.object(
         get_constraints_cli,
@@ -76,7 +85,7 @@ async def test_run_filters_one_dimension(mock_cache_manager, mock_api_client, ca
 
 
 @pytest.mark.asyncio
-async def test_run_reports_an_unknown_dimension(mock_cache_manager, mock_api_client, capsys):
+async def test_run_reports_an_unknown_dimension(capsys):
     with patch.object(
         get_constraints_cli,
         'build_constraints_output',
@@ -93,7 +102,7 @@ async def test_run_reports_an_unknown_dimension(mock_cache_manager, mock_api_cli
 
 
 @pytest.mark.asyncio
-async def test_run_reports_an_unknown_dataflow(mock_cache_manager, mock_api_client, capsys):
+async def test_run_reports_an_unknown_dataflow(capsys):
     with patch.object(
         get_constraints_cli,
         'build_constraints_output',
@@ -108,7 +117,7 @@ async def test_run_reports_an_unknown_dataflow(mock_cache_manager, mock_api_clie
 
 
 @pytest.mark.asyncio
-async def test_run_passes_the_dataflow_through(mock_cache_manager, mock_api_client, capsys):
+async def test_run_passes_the_dataflow_through(capsys):
     build = AsyncMock(return_value=_output('101_1015_DF_DCSP_COLTIVAZIONI_1'))
 
     with patch.object(get_constraints_cli, 'build_constraints_output', build):
