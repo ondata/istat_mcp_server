@@ -29,6 +29,7 @@ dev = [
 
 [project.scripts]
 istat-get-concepts-cli = "istat_mcp_server.cli.get_concepts_cli:main"
+istat-get-constraints-cli = "istat_mcp_server.cli.get_constraints_cli:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

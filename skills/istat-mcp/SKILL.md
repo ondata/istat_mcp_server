@@ -203,6 +203,16 @@ Output includes:
 
 **Alternative manual approach**: call `get_structure` first, then `get_codelist_description` for each codelist you need.
 
+**Fast path — full list of values without spending context**: when you need *every* code of a dimension (or the whole constraints list) for a reason of your own (building a table, filtering outside the conversation, checking coverage), run the standalone command instead of the tool. It writes the same JSON to stdout, so the values never enter the conversation:
+
+```bash
+istat-get-constraints-cli 101_1015_DF_DCSP_COLTIVAZIONI_1                    # all dimensions
+istat-get-constraints-cli 101_1015_DF_DCSP_COLTIVAZIONI_1 --dimension FREQ   # one dimension
+istat-get-constraints-cli 101_1015_DF_DCSP_COLTIVAZIONI_1 | jq '.constraints[] | select(.dimension=="TYPE_OF_CROP") | .values | length'
+```
+
+It reads the same persistent cache as the tools (so it is free after the first call) and prints `{"id_dataflow": "…", "found": false}` when the dataflow — or, with `--dimension`, the dimension — does not exist.
+
 
 To explore the values of a specific codelist:
 ```json

@@ -16,7 +16,7 @@ This Model Context Protocol (MCP) server provides Claude Desktop with access to 
 - **8 MCP Tools** for data discovery and retrieval:
   - `discover_dataflows` - Find available datasets by keywords (with blacklist filtering)
   - `get_structure` - Get dimension definitions and codelists for a datastructure ID
-  - `get_constraints` - Get available constraint values for each dimension with descriptions (combines structure + constraints + codelist descriptions)
+  - `get_constraints` - Get available constraint values for each dimension with descriptions (combines structure + constraints + codelist descriptions; the same output is available from the `istat-get-constraints-cli` command, see SKILL.md)
   - `get_codelist_description` - Get descriptions in Italian/English for codelist values
   - `get_concepts` - Get the Italian or English description of an ISTAT concept by ID (wraps the `istat-get-concepts-cli` command)
   - `get_data` - Fetch actual statistical data in TSV table format (with blacklist validation)
@@ -321,7 +321,8 @@ ruff check .
 │       │   ├── memory.py      # In-memory cache
 │       │   └── persistent.py  # Disk cache
 │       ├── cli/               # Standalone CLI commands
-│       │   └── get_concepts_cli.py  # istat-get-concepts-cli <concept_id>
+│       │   ├── get_concepts_cli.py     # istat-get-concepts-cli <concept_id>
+│       │   └── get_constraints_cli.py  # istat-get-constraints-cli <dataflow_id> [--dimension DIM]
 │       ├── tools/             # MCP tool handlers
 │       │   ├── discover_dataflows.py
 │       │   ├── get_structure.py

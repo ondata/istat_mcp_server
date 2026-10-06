@@ -76,6 +76,37 @@ async def handle_get_constraints(
             )
         ]
 
+    output = await build_constraints_output(dataflow_id, cache, api)
+
+    if output is None:
+        return [
+            TextContent(
+                type='text', text=f'Dataflow not found: {dataflow_id}'
+            )
+        ]
+
+    return format_json_response(output)
+
+
+async def build_constraints_output(
+    dataflow_id: str,
+    cache: CacheManager,
+    api: ApiClient,
+) -> ConstraintsOutput | None:
+    """Build the constraints (with descriptions) of one dataflow.
+
+    Shared by this tool and ``istat-get-constraints-cli``, so the two entry
+    points cannot drift. The caller validates ``dataflow_id`` first
+    (see :func:`handle_get_constraints`).
+
+    Args:
+        dataflow_id: Dataflow ID, already validated
+        cache: Cache manager instance
+        api: API client instance
+
+    Returns:
+        The constraints output, or None when the dataflow does not exist
+    """
     logger.info(f'get_constraints: dataflow_id={dataflow_id}')
 
     # Step 1: Get dataflow info to find the datastructure ID
@@ -83,11 +114,7 @@ async def handle_get_constraints(
     dataflow_info = find_dataflow_info(dataflows, dataflow_id)
 
     if not dataflow_info:
-        return [
-            TextContent(
-                type='text', text=f'Dataflow not found: {dataflow_id}'
-            )
-        ]
+        return None
 
     id_datastructure = dataflow_info.id_datastructure
     logger.info(f'Found datastructure: {id_datastructure}')
@@ -195,8 +222,6 @@ async def handle_get_constraints(
     )
 
     # Build final output
-    output = ConstraintsOutput(
+    return ConstraintsOutput(
         id_dataflow=dataflow_id, constraints=output_constraints
     )
-
-    return format_json_response(output)
