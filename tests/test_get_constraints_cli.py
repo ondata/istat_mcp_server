@@ -23,7 +23,7 @@ def no_real_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(get_constraints_cli, 'ApiClient', lambda **kwargs: MagicMock())
 
 
-def _output(dataflow_id: str = 'DCIS_POPRES1') -> ConstraintsOutput:
+def _output(dataflow_id: str = '151_914') -> ConstraintsOutput:
     return ConstraintsOutput(
         id_dataflow=dataflow_id,
         constraints=[
@@ -54,10 +54,10 @@ async def test_run_prints_every_dimension(capsys):
         'build_constraints_output',
         AsyncMock(return_value=_output()),
     ):
-        await get_constraints_cli._run('DCIS_POPRES1', None)
+        await get_constraints_cli._run('151_914', None)
 
     payload = json.loads(capsys.readouterr().out)
-    assert payload['id_dataflow'] == 'DCIS_POPRES1'
+    assert payload['id_dataflow'] == '151_914'
     assert [c['dimension'] for c in payload['constraints']] == [
         'FREQ',
         'SEX',
@@ -78,7 +78,7 @@ async def test_run_filters_one_dimension(capsys):
         'build_constraints_output',
         AsyncMock(return_value=_output()),
     ):
-        await get_constraints_cli._run('DCIS_POPRES1', 'sex')
+        await get_constraints_cli._run('151_914', 'sex')
 
     payload = json.loads(capsys.readouterr().out)
     assert [c['dimension'] for c in payload['constraints']] == ['SEX']
@@ -91,11 +91,11 @@ async def test_run_reports_an_unknown_dimension(capsys):
         'build_constraints_output',
         AsyncMock(return_value=_output()),
     ):
-        await get_constraints_cli._run('DCIS_POPRES1', 'NOPE')
+        await get_constraints_cli._run('151_914', 'NOPE')
 
     payload = json.loads(capsys.readouterr().out)
     assert payload == {
-        'id_dataflow': 'DCIS_POPRES1',
+        'id_dataflow': '151_914',
         'dimension': 'NOPE',
         'found': False,
     }
@@ -136,13 +136,13 @@ def test_main_reports_api_errors_as_json(capsys, monkeypatch):
 
     monkeypatch.setattr(get_constraints_cli, 'asyncio', get_constraints_cli.asyncio)
     monkeypatch.setattr(get_constraints_cli, '_run', explode)
-    monkeypatch.setattr('sys.argv', ['istat-get-constraints-cli', 'DCIS_POPRES1'])
+    monkeypatch.setattr('sys.argv', ['istat-get-constraints-cli', '151_914'])
 
     with pytest.raises(SystemExit) as exit_info:
         get_constraints_cli.main()
 
     assert exit_info.value.code == 1
     assert json.loads(capsys.readouterr().out) == {
-        'id_dataflow': 'DCIS_POPRES1',
+        'id_dataflow': '151_914',
         'error': 'Request timeout after 120.2s',
     }

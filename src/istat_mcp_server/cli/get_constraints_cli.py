@@ -8,7 +8,7 @@ Usage:
 Output (stdout, JSON): the same JSON as the `get_constraints` MCP tool, without
 routing it through the LLM context.
 
-    {"id_dataflow": "DCIS_POPRES1", "constraints": [
+    {"id_dataflow": "151_914", "constraints": [
         {"dimension": "FREQ", "codelist": "CL_FREQ", "values": [
             {"code": "A", "description_it": "...", "description_en": "..."}]},
         {"dimension": "TIME_PERIOD", "StartPeriod": "2001", "EndPeriod": "2024"}]}
@@ -92,7 +92,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description='Print the available constraints of an ISTAT dataflow.'
     )
-    parser.add_argument('dataflow_id', help="Dataflow ID (e.g. 'DCIS_POPRES1')")
+    parser.add_argument('dataflow_id', help="Dataflow ID (e.g. '151_914')")
     parser.add_argument(
         '--dimension',
         help="Limit the output to one dimension (e.g. FREQ)",
