@@ -146,3 +146,23 @@ def test_main_reports_api_errors_as_json(capsys, monkeypatch):
         'id_dataflow': '151_914',
         'error': 'Request timeout after 120.2s',
     }
+
+
+def test_main_reports_unreadable_responses_as_json(capsys, monkeypatch):
+    """A body the API sent successfully but that cannot be parsed is not an ApiError."""
+    from xml.etree.ElementTree import ParseError
+
+    def explode(*_args, **_kwargs):
+        raise ParseError('not well-formed (invalid token)')
+
+    monkeypatch.setattr(get_constraints_cli, '_run', explode)
+    monkeypatch.setattr('sys.argv', ['istat-get-constraints-cli', '151_914'])
+
+    with pytest.raises(SystemExit) as exit_info:
+        get_constraints_cli.main()
+
+    assert exit_info.value.code == 1
+    assert json.loads(capsys.readouterr().out) == {
+        'id_dataflow': '151_914',
+        'error': 'Unexpected error: not well-formed (invalid token)',
+    }

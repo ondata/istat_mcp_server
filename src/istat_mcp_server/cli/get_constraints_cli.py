@@ -109,6 +109,14 @@ def main() -> None:
         # rather than ending in a traceback.
         _print_json({'id_dataflow': args.dataflow_id, 'error': str(e)})
         sys.exit(1)
+    except Exception as e:
+        # A response the API sends successfully but that cannot be parsed is not
+        # an ApiError, and `handle_tool_errors` catches it in the MCP tool: the
+        # CLI keeps the same contract, so stdout stays JSON.
+        _print_json(
+            {'id_dataflow': args.dataflow_id, 'error': f'Unexpected error: {e}'}
+        )
+        sys.exit(1)
 
 
 if __name__ == '__main__':
