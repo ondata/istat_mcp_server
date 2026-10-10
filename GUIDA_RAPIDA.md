@@ -134,7 +134,7 @@ pip install -e .
 
 - ✅ 6 strumenti MCP completamente funzionali
 - ✅ Cache a due livelli (memoria + disco)
-- ✅ Rate limiting (3 chiamate/minuto)
+- ✅ Rate limiting (4 chiamate/minuto)
 - ✅ Retry automatico con backoff esponenziale
 - ✅ Parsing XML SDMX 2.1
 - ✅ Validazione input con Pydantic
