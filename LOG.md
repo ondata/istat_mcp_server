@@ -2,6 +2,10 @@
 
 ## 2026-10-10
 
+- Add `istat-get-constraints-cli <dataflow_id> [--dimension DIM]` (#58, closes #53): same JSON as `get_constraints` on stdout, so long code lists stay out of the LLM context; shared logic in `build_constraints_output`
+- Add streamable-HTTP host (`istat-mcp-http`, `http` extra), Dockerfile and Helm chart (#57, closes #56)
+  - bearer token compared with `hmac.compare_digest`; chart defaults to 1 replica because ISTAT rate-limits by IP and limiter/cache are per process
+  - not verified locally: `helm lint`, `docker build`
 - Bump dependency floors in one change (replaces dependabot #48-#52): pydantic>=2.12.5, diskcache>=5.6.3, httpx>=0.28.1, pytest>=9.0.3, mcp>=1.27.0,<2
 - `mcp` capped below 2: unbounded `>=1.27.0` resolves to mcp 2.3.0 (major); lock now mcp 1.30.0, pytest 9.1.1
 - Verified: 76 tests pass; stdio smoke test (initialize, list_tools, live `get_constraints`/`get_data` on `151_914`)
