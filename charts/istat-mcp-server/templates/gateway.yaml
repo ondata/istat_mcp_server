@@ -1,0 +1,25 @@
+{{- if and .Values.gateway.enabled .Values.gateway.create }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ include "istat-mcp-server.gateway.name" . }}
+  namespace: {{ .Values.gateway.namespace | default (include "istat-mcp-server.namespace" .) }}
+  labels:
+    {{- include "istat-mcp-server.labels" . | nindent 4 }}
+  {{- with .Values.gateway.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  gatewayClassName: {{ required "gateway.className is required when gateway.create=true" .Values.gateway.className }}
+  {{- with .Values.gateway.addresses }}
+  addresses:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  listeners:
+    {{- toYaml .Values.gateway.listeners | nindent 4 }}
+  {{- with .Values.gateway.infrastructure }}
+  infrastructure:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

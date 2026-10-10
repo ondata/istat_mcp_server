@@ -1,0 +1,34 @@
+{{- $auto := .Values.autoscaling }}
+{{- if $auto.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "istat-mcp-server.fullname" . }}
+  namespace: {{ include "istat-mcp-server.namespace" . }}
+  labels:
+    {{- include "istat-mcp-server.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "istat-mcp-server.fullname" . }}
+  minReplicas: {{ $auto.minReplicas }}
+  maxReplicas: {{ $auto.maxReplicas }}
+  metrics:
+    {{- if $auto.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $auto.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if $auto.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $auto.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

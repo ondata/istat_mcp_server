@@ -1,0 +1,14 @@
+{{ .Chart.Name }} {{ .Chart.Version }} — release {{ .Release.Name }} in namespace {{ include "istat-mcp-server.namespace" . }}
+
+  Service {{ .Values.service.type }} on port {{ .Values.service.port }}:
+    MCP streamable-HTTP endpoint: {{ .Values.httpRoute.path }}/   (note the trailing slash; {{ .Values.httpRoute.path }} redirects with 307)
+    Health endpoint (probes only): {{ .Values.probes.path }}
+{{- if .Values.gateway.enabled }}
+  Gateway API: HTTPRoute bound to Gateway {{ include "istat-mcp-server.gateway.name" . }} (namespace {{ .Values.gateway.namespace | default (include "istat-mcp-server.namespace" .) }}), path {{ .Values.httpRoute.path }}
+{{- end }}
+  Auth on {{ .Values.httpRoute.path }}: {{ if .Values.auth.enabled }}Bearer token from Secret {{ .Values.auth.secretName }} (key {{ .Values.auth.secretKey }}){{ else }}disabled (endpoint is open){{ end }}
+  Image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+
+Port-forward for a local test:
+  kubectl -n {{ include "istat-mcp-server.namespace" . }} port-forward svc/{{ include "istat-mcp-server.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+  curl http://localhost:{{ .Values.service.port }}{{ .Values.probes.path }}

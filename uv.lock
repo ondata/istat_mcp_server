@@ -339,6 +339,10 @@ dev = [
     { name = "pytest-mock" },
     { name = "ruff" },
 ]
+http = [
+    { name = "starlette" },
+    { name = "uvicorn" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -361,9 +365,11 @@ requires-dist = [
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.12.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+    { name = "starlette", marker = "extra == 'http'", specifier = ">=0.37.0" },
     { name = "tenacity", specifier = ">=8.2.0" },
+    { name = "uvicorn", marker = "extra == 'http'", specifier = ">=0.30.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["http", "dev"]
 
 [package.metadata.requires-dev]
 dev = [

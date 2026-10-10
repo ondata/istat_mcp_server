@@ -1,0 +1,58 @@
+{{- if .Values.networkPolicy.enabled }}
+# Ingress on the http port only from explicit peers: the listed namespaces, the Gateway namespace
+# (in-cluster gateway proxies) and the listed CIDRs (load balancers / proxies outside the cluster).
+# With no peers configured, ingress is limited to the chart namespace; a rule without `from` would allow everyone.
+# Egress is limited to DNS and the configured TCP ports.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "istat-mcp-server.fullname" . }}
+  namespace: {{ include "istat-mcp-server.namespace" . }}
+  labels:
+    {{- include "istat-mcp-server.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "istat-mcp-server.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  {{- $np := .Values.networkPolicy }}
+  {{- $hasPeers := or $np.ingressNamespaces $np.ingressCIDRs .Values.gateway.enabled }}
+  ingress:
+    - from:
+        {{- if not $hasPeers }}
+        - podSelector: {}
+        {{- end }}
+        {{- range $np.ingressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+        {{- if .Values.gateway.enabled }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.gateway.namespace | default (include "istat-mcp-server.namespace" .) }}
+        {{- end }}
+        {{- range $np.ingressCIDRs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        - port: http
+          protocol: TCP
+  egress:
+    - ports:
+        - { port: 53, protocol: UDP }
+        - { port: 53, protocol: TCP }
+    {{- with .Values.networkPolicy.egressPorts }}
+    - ports:
+        {{- range . }}
+        - { port: {{ . }}, protocol: TCP }
+        {{- end }}
+    {{- end }}
+    {{- if .Values.networkPolicy.egressMetadata }}
+    - to:                     # cloud metadata endpoint
+        - ipBlock: { cidr: 169.254.169.254/32 }
+    {{- end }}
+{{- end }}

@@ -20,6 +20,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# HTTP host (streamable-HTTP transport), see istat_mcp_server/http_server.py and the Dockerfile.
+http = [
+    "starlette>=0.37.0",
+    "uvicorn>=0.30.0",
+]
 dev = [
     "pytest>=9.0.3",
     "pytest-asyncio>=0.23.0",
@@ -29,6 +34,7 @@ dev = [
 
 [project.scripts]
 istat-get-concepts-cli = "istat_mcp_server.cli.get_concepts_cli:main"
+istat-mcp-http = "istat_mcp_server.http_server:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

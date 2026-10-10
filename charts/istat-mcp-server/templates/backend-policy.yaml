@@ -1,0 +1,28 @@
+{{- if and .Values.gateway.enabled .Values.backendPolicy.enabled }}
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: {{ include "istat-mcp-server.fullname" . }}
+  namespace: {{ include "istat-mcp-server.namespace" . }}
+  labels:
+    {{- include "istat-mcp-server.labels" . | nindent 4 }}
+spec:
+  default:
+    timeoutSec: {{ .Values.backendPolicy.timeoutSec }}
+    connectionDraining:
+      drainingTimeoutSec: {{ .Values.backendPolicy.drainingTimeoutSec }}
+    sessionAffinity:
+      type: {{ .Values.backendPolicy.sessionAffinity.type }}
+    {{- with .Values.backendPolicy.securityPolicy }}
+    securityPolicy: {{ . }}
+    {{- end }}
+    {{- if .Values.backendPolicy.logging.enabled }}
+    logging:
+      enabled: true
+      sampleRate: {{ .Values.backendPolicy.logging.sampleRate }}
+    {{- end }}
+  targetRef:
+    group: ""
+    kind: Service
+    name: {{ include "istat-mcp-server.fullname" . }}
+{{- end }}
