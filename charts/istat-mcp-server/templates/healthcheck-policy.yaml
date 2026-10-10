@@ -1,0 +1,34 @@
+{{- if and .Values.gateway.enabled .Values.healthCheckPolicy.enabled }}
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: {{ include "istat-mcp-server.fullname" . }}
+  namespace: {{ include "istat-mcp-server.namespace" . }}
+  labels:
+    {{- include "istat-mcp-server.labels" . | nindent 4 }}
+spec:
+  default:
+    checkIntervalSec: {{ .Values.healthCheckPolicy.checkIntervalSec }}
+    timeoutSec: {{ .Values.healthCheckPolicy.timeoutSec }}
+    healthyThreshold: {{ .Values.healthCheckPolicy.healthyThreshold }}
+    unhealthyThreshold: {{ .Values.healthCheckPolicy.unhealthyThreshold }}
+    config:
+      {{- if eq .Values.healthCheckPolicy.type "HTTP" }}
+      type: HTTP
+      httpHealthCheck:
+        port: {{ .Values.service.port }}
+        requestPath: {{ .Values.healthCheckPolicy.requestPath | quote }}
+      {{- else }}
+      type: TCP
+      tcpHealthCheck:
+        port: {{ .Values.service.port }}
+      {{- end }}
+    {{- if .Values.healthCheckPolicy.logConfig.enabled }}
+    logConfig:
+      enabled: true
+    {{- end }}
+  targetRef:
+    group: ""
+    kind: Service
+    name: {{ include "istat-mcp-server.fullname" . }}
+{{- end }}

@@ -1,5 +1,11 @@
 # Log
 
+## 2026-10-10
+
+- Bump dependency floors in one change (replaces dependabot #48-#52): pydantic>=2.12.5, diskcache>=5.6.3, httpx>=0.28.1, pytest>=9.0.3, mcp>=1.27.0,<2
+- `mcp` capped below 2: unbounded `>=1.27.0` resolves to mcp 2.3.0 (major); lock now mcp 1.30.0, pytest 9.1.1
+- Verified: 76 tests pass; stdio smoke test (initialize, list_tools, live `get_constraints`/`get_data` on `151_914`)
+
 ## 2026-04-11
 
 - Add Astro site in `site/` — single page EN (`/`) and IT (`/it`), design system from `DESIGN.md`

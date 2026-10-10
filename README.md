@@ -287,6 +287,29 @@ Once configured, you can ask Claude questions like:
 - "Fetch population data for Italy from 2020 to 2023"
 - "Get agricultural data for dataflow 101_1015_DF_DCSP_COLTIVAZIONI_1 filtered by REF_AREA=IT and TYPE_OF_CROP=APPLE"
 
+## HTTP transport, Docker and Kubernetes
+
+The server runs over stdio by default. For network deployments the package also ships an
+HTTP host (`istat_mcp_server.http_server`, installed with the `http` extra) that exposes the
+same tools over MCP streamable-HTTP:
+
+```bash
+uv sync --extra http
+istat-mcp-http                       # or: python -m istat_mcp_server.http_server
+curl http://localhost:8000/health    # {"status":"ok"}
+```
+
+- `/mcp/` is the MCP endpoint (`/mcp` redirects to `/mcp/`); `/health` is for probes.
+- `PORT` (default `8000`) and `HOST` (default `0.0.0.0`) set the listen address.
+- `MCP_ISTAT_TOKEN`, when set, requires `Authorization: Bearer <token>` on `/mcp`.
+- `LOG_DIR` and `PERSISTENT_CACHE_DIR` should point to writable directories when the
+  package directory is read-only (the container image sets them under `/tmp`).
+
+A `Dockerfile` builds the HTTP host image from `uv.lock` (`docker build -t istat-mcp-server .`),
+and `charts/istat-mcp-server` is a Helm chart that deploys it with optional Gateway API
+exposure, autoscaling, NetworkPolicy and bearer-token authentication. See
+[`charts/istat-mcp-server/README.md`](charts/istat-mcp-server/README.md).
+
 ## Development
 
 Run tests:

@@ -1,0 +1,230 @@
+# Default values for istat-mcp-server.
+#
+# The chart deploys the HTTP host image: a Starlette/uvicorn wrapper that mounts the
+# upstream stdio MCP server as a stateless streamable-HTTP app at /mcp and serves
+# /health for probes. The server only calls the public ISTAT SDMX API, so it needs
+# no database, no cloud identity and no persistent storage.
+
+# Target namespace. Empty = the Helm release namespace.
+namespace: ""
+
+nameOverride: ""
+fullnameOverride: ""
+imagePullSecrets: []
+
+# No public image is published yet: build it with the Dockerfile at the repository root
+# (`docker build -t <registry>/istat-mcp-server:<tag> .`), push it and set repository/tag.
+image:
+  repository: "istat-mcp-server"
+  tag: ""                    # empty = .Chart.AppVersion
+imagePullPolicy: IfNotPresent
+
+# The pod needs neither cloud identity nor Kubernetes API access, so by default it
+# runs with the namespace default ServiceAccount and no mounted token.
+serviceAccount:
+  create: false
+  name: ""                   # empty = "default"
+  annotations: {}
+
+replicaCount: 1
+# One replica by default: the ISTAT SDMX API rate-limits by source IP, and the client limiter
+# (4 calls/minute) and the cache are per process. N replicas behind the same egress IP make up
+# to N times the calls and risk an IP block. Raise maxReplicas only with distinct egress IPs.
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+strategy:
+  type: RollingUpdate
+  rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+revisionHistoryLimit: 10
+progressDeadlineSeconds: 600
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+podAnnotations: {}
+podLabels: {}
+terminationGracePeriodSeconds: 30
+
+# Service mesh enrollment (Istio). Disabled by default; the chart does not require a mesh.
+# mode "ambient" adds the istio.io/dataplane-mode pod label (and optionally a waypoint);
+# mode "sidecar" adds the labels in podLabels (set istio.io/rev to your control plane revision).
+mesh:
+  enabled: false
+  mode: ambient              # ambient | sidecar
+  ambient:
+    dataplaneMode: ambient
+    waypoint: ""
+  podLabels:
+    sidecar.istio.io/inject: "true"
+    # istio.io/rev: "default"
+
+# PORT is passed to the container from service.port, so the two always match.
+service:
+  type: ClusterIP
+  port: 8000
+  annotations: {}
+  loadBalancerIP: ""
+  # externalTrafficPolicy: Local
+
+# Ingress is allowed only from explicit peers: ingressNamespaces, the Gateway namespace (when
+# gateway.enabled, for in-cluster gateway proxies) and ingressCIDRs (for proxies outside the
+# cluster, e.g. GKE Gateway / Google Cloud load balancers: 130.211.0.0/22 and 35.191.0.0/16).
+# If the gateway proxy runs in a namespace other than the Gateway resource (e.g. an Istio
+# ingress gateway in istio-system), add that namespace to ingressNamespaces.
+# With no peers configured, only pods in the chart namespace can reach the service.
+# Egress is limited to DNS and the listed TCP ports (443 = ISTAT SDMX API).
+networkPolicy:
+  enabled: true
+  ingressNamespaces: []
+  ingressCIDRs: []
+  egressPorts: [443]
+  egressMetadata: false      # also allow the cloud metadata endpoint 169.254.169.254
+
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits: { cpu: "1", memory: 512Mi }
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop: ["ALL"]
+
+# Liveness and readiness share the same HTTP probe.
+probes:
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Rendered verbatim into the pod spec.
+initContainers: []
+extraContainers: []
+extraVolumes: []
+extraVolumeMounts: []
+
+# Environment for the upstream server. The root filesystem is read-only, so log and cache
+# directories are redirected under the /tmp emptyDir (one level deep: the server uses
+# os.mkdir without parents).
+env:
+  LOG_DIR: "/tmp/istat-log"
+  PERSISTENT_CACHE_DIR: "/tmp/istat-cache"
+  # ISTAT_DB_PATH: "/app/istat.duckdb"   # enables the get_territorial_codes tool
+
+# Bearer-token authentication on /mcp (/health stays open for probes). When enabled the
+# token is read from secretName/secretKey and exported as MCP_ISTAT_TOKEN.
+auth:
+  enabled: false
+  secretName: "istat-mcp-server-secrets"
+  secretKey: "token"
+
+# ---------------------------------------------------------------------------
+# Kubernetes Gateway API (optional). enabled: false = ClusterIP Service only.
+# create: false = attach an HTTPRoute to an existing Gateway (name/namespace below).
+# create: true  = also create the Gateway from className/listeners.
+# ---------------------------------------------------------------------------
+gateway:
+  enabled: false
+  create: false
+  name: ""                   # empty = <release fullname>-gateway
+  namespace: ""              # empty = the chart namespace
+  # Used only when create: true.
+  className: ""              # e.g. istio, gke-l7-global-external-managed, gke-l7-rilb
+  annotations: {}
+  addresses: []
+  listeners:
+    - name: http             # drives the HTTP -> HTTPS redirect route
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      # hostname: "mcp.example.com"
+      allowedRoutes:
+        namespaces:
+          from: Same
+      tls:
+        mode: Terminate
+        certificateRefs: []  # e.g. [{ kind: Secret, name: istat-mcp-server-tls }]
+  infrastructure: {}
+
+# Only the MCP path is routed; /health is reachable from inside the cluster only.
+httpRoute:
+  listenerName: "https"
+  path: "/mcp"
+  hostnames: []              # e.g. ["mcp.example.com"]
+  filters: []
+
+httpsRedirect:
+  enabled: true
+  listenerName: "http"
+
+# GKE-specific policies (networking.gke.io CRDs). Leave disabled on other platforms.
+backendPolicy:
+  enabled: false
+  timeoutSec: 60
+  drainingTimeoutSec: 60
+  sessionAffinity: { type: "NONE" }
+  securityPolicy: ""         # Cloud Armor policy name
+  logging: { enabled: true, sampleRate: 1.0 }
+
+healthCheckPolicy:
+  enabled: false
+  type: "HTTP"               # HTTP | TCP
+  requestPath: "/health"
+  checkIntervalSec: 15
+  timeoutSec: 5
+  healthyThreshold: 1
+  unhealthyThreshold: 3
+  logConfig: { enabled: false }
+
+# ---------------------------------------------------------------------------
+# Secrets (rendered only when auth.enabled).
+# externalSecrets.enabled: true  = an External Secrets Operator SecretStore (HashiCorp Vault
+#   Kubernetes auth) plus one ExternalSecret per entry below.
+# externalSecrets.enabled: false = a plain Opaque Secret built from the `plaintext` map.
+# ---------------------------------------------------------------------------
+externalSecrets:
+  enabled: false
+  refreshInterval: "1h"
+  secretStore:
+    name: "istat-mcp-server-secret-store"
+  vault:
+    server: "https://vault.example.com"
+    path: "secret"           # KV mount
+    version: "v2"
+    auth:
+      mountPath: "kubernetes"
+      role: "istat-mcp-server"
+      serviceAccountRef:
+        name: "default"
+  secrets:
+    token:
+      enabled: true
+      authScoped: true       # rendered only when auth.enabled
+      name: "istat-mcp-server-token"
+      key: "istat-mcp-server/token"       # Vault path; its keys become the Secret keys
+      destinationName: "istat-mcp-server-secrets"
+      plaintext:
+        token: ""            # used when externalSecrets.enabled is false

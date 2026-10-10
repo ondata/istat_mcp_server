@@ -1,0 +1,21 @@
+apiVersion: v2
+name: istat-mcp-server
+description: >-
+  Helm chart for the ISTAT MCP server exposed over streamable HTTP. Deploys the HTTP host
+  image (Starlette/uvicorn wrapper around the stdio server) as a stateless Deployment with
+  optional Kubernetes Gateway API exposure, HPA, PDB, NetworkPolicy and bearer-token auth
+  sourced from a plain Secret or from External Secrets.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.29.0-0"
+home: https://github.com/ondata/istat_mcp_server
+sources:
+  - https://github.com/ondata/istat_mcp_server
+keywords:
+  - mcp
+  - istat
+  - sdmx
+  - open-data
+maintainers:
+  - name: Ivan Senyk
