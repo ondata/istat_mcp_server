@@ -2,6 +2,9 @@
 
 ## 2026-10-10
 
+- Docs (#60): rate limit is 4 calls/min (as in `ApiClient` since f649958) in README, README_IT, SKILL.md, GUIDA_RAPIDA, copilot instructions; `old/` and `PROJECT_STATUS.md` left as they are
+- Rewrite `GUIDA_RAPIDA.md`: 8 tools, `get_data` returns TSV, cache TTLs from `server.py`, `uv sync`, generic paths instead of personal ones
+- Open: `.env.example` sets `OBSERVED_DATA_CACHE_TTL_SECONDS=3600`, code default is 86400; README_IT does not mention `istat-get-constraints-cli`
 - Add `istat-get-constraints-cli <dataflow_id> [--dimension DIM]` (#58, closes #53): same JSON as `get_constraints` on stdout, so long code lists stay out of the LLM context; shared logic in `build_constraints_output`
 - Add streamable-HTTP host (`istat-mcp-http`, `http` extra), Dockerfile and Helm chart (#57, closes #56)
   - bearer token compared with `hmac.compare_digest`; chart defaults to 1 replica because ISTAT rate-limits by IP and limiter/cache are per process
