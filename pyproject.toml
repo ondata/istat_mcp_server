@@ -34,6 +34,7 @@ dev = [
 
 [project.scripts]
 istat-get-concepts-cli = "istat_mcp_server.cli.get_concepts_cli:main"
+istat-get-constraints-cli = "istat_mcp_server.cli.get_constraints_cli:main"
 istat-mcp-http = "istat_mcp_server.http_server:main"
 
 [build-system]
