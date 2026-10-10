@@ -21,7 +21,7 @@ This MCP server exposes data from the ISTAT SDMX API (https://esploradati.istat.
 - All I/O operations must be **async/await** (API calls, cache reads/writes)
 
 ### API Usage
-- **Rate limiting**: Maximum 3 API calls per minute (enforced by `RateLimiter` in `ApiClient`)
+- **Rate limiting**: Maximum 4 API calls per minute (enforced by `RateLimiter` in `ApiClient`)
 - Implement proper error handling and retries with exponential backoff
 - Never hit live API endpoints in tests — always mock API calls
 - Use the shared `ApiClient` instance passed to tool handlers
@@ -746,7 +746,7 @@ Claude Desktop
 │     (diskcache.Cache)           │     TTL: 24h or 1 month (by data type)
 │           │ miss                │
 │           ▼                     │
-│  3. Fetch from ISTAT API        │  ← Rate-limited: 3 calls/min
+│  3. Fetch from ISTAT API        │  ← Rate-limited: 4 calls/min
 │     (api/client.py)             │     Retry with backoff
 │           │                     │
 │           ▼                     │
@@ -812,7 +812,7 @@ The API client in `src/istat_mcp_server/api/client.py` handles all HTTP communic
 
 ### Responsibilities
 
-- **Rate Limiting**: Enforces maximum 3 API calls per 60-second window using `RateLimiter` class
+- **Rate Limiting**: Enforces maximum 4 API calls per 60-second window using `RateLimiter` class
 - **Retry Logic**: Automatic retries with exponential backoff (tenacity library)
   - Retries on: `httpx.HTTPStatusError`, `httpx.NetworkError`
   - Max attempts: 3
@@ -837,7 +837,7 @@ class RateLimiter:
 class ApiClient:
     def __init__(self, base_url: str, timeout: float, max_retries: int):
         self._client = httpx.AsyncClient(timeout=timeout)
-        self._rate_limiter = RateLimiter(max_calls=3, time_window=60.0)
+        self._rate_limiter = RateLimiter(max_calls=4, time_window=60.0)
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(...))
     async def _get(self, path: str) -> httpx.Response:
@@ -1745,7 +1745,7 @@ python view_cache.py
 
 ### ISTAT API Limitations
 
-1. **Rate limiting**: 3 calls per minute (enforced by client)
+1. **Rate limiting**: 4 calls per minute (enforced by client)
 2. **XML only**: No JSON endpoint available (we parse XML)
 3. **Italian focus**: Most data is Italy-specific
 4. **SDMX 2.1**: Older SDMX version (not 3.0)

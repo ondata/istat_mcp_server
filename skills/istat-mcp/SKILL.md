@@ -316,7 +316,7 @@ Key rules for `get_data`:
 - **Multiple codes** for the same dimension: use an array `["0011", "0013"]`
 - **No filter** on a dimension: omit it from `dimension_filters`
 - **Default behavior**: if no time range is specified, only the latest available year is returned
-- **Rate limit**: the ISTAT API allows max 3 calls per minute (handled automatically)
+- **Rate limit**: the server makes at most 4 ISTAT API calls per minute (handled automatically)
 
 ---
 ## Complete Use Case: Employment by Sector
@@ -548,7 +548,7 @@ curl "{csv_url}"
 
 - **Base URL**: `https://esploradati.istat.it/SDMXWS/rest`
 - **Format**: SDMX 2.1 XML → TSV output
-- **Rate Limit**: 3 calls/minute (automatically managed by the MCP server)
+- **Rate Limit**: 4 calls/minute (automatically managed by the MCP server)
 - **Cache**: metadata 1 month · dataflow 7 days · observed data 24h (1 day)
 - **Query path format**: `/data/{dataflow_id}/{dim1.dim2.dim3...}/ALL/?params`
   - Empty dimensions: `.`

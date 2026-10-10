@@ -41,7 +41,7 @@ This Model Context Protocol (MCP) server provides Claude Desktop with access to 
   - In-memory cache (cachetools) for fast access during session
   - Persistent disk cache (diskcache) that survives restarts
 
-- **Rate Limiting**: Maximum 3 API calls per minute with automatic queuing
+- **Rate Limiting**: Maximum 4 API calls per minute with automatic queuing
 
 - **Retry Logic**: Exponential backoff on transient errors
 
@@ -426,7 +426,7 @@ Use the `get_cache_diagnostics` tool in Claude Desktop to inspect cache status i
 
 ### Rate Limiting
 
-The ISTAT SDMX API is rate-limited to 3 calls per minute. The server automatically handles this by queuing requests when the limit is reached.
+The ISTAT SDMX API is rate-limited. The server makes at most 4 calls per minute (`RateLimiter` in `ApiClient`) and automatically queues requests when the limit is reached.
 
 ### Accept Headers
 
