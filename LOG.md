@@ -1,5 +1,10 @@
 # Log
 
+## 2026-10-11
+
+- Merge dependabot #62-#66: lxml>=6.1.3, pydantic>=2.14.0, pytest>=9.1.1, pytest-mock>=3.16.0, build setuptools>=84.0.0
+- Dependabot PRs leave `uv.lock` stale: regenerated (lxml 6.1.3, pydantic 2.14.0, pytest-mock 3.16.0); 88 tests pass, `uv build` ok
+
 ## 2026-10-10
 
 - Docs (#60): rate limit is 4 calls/min (as in `ApiClient` since f649958) in README, README_IT, SKILL.md, GUIDA_RAPIDA, copilot instructions; `old/` and `PROJECT_STATUS.md` left as they are
