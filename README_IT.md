@@ -119,13 +119,13 @@ Aggiungi al file di configurazione di Claude Desktop:
 **Aggiungi globalmente** (disponibile in tutti i tuoi progetti):
 
 ```bash
-claude mcp add -s user istat -- /path/to/istat_mcp_server/.venv/bin/python -m istat_mcp_server
+claude mcp add -s user istat -- "/path/to/istat_mcp_server/.venv/bin/python" -m istat_mcp_server
 ```
 
 **Aggiungi solo per il progetto corrente** (crea o aggiorna `.mcp.json` nella cartella del progetto):
 
 ```bash
-claude mcp add istat -- /path/to/istat_mcp_server/.venv/bin/python -m istat_mcp_server
+claude mcp add istat -- "/path/to/istat_mcp_server/.venv/bin/python" -m istat_mcp_server
 ```
 
 Oppure aggiungi manualmente a `.mcp.json` nella root del tuo progetto:
@@ -149,7 +149,7 @@ Oppure aggiungi manualmente a `.mcp.json` nella root del tuo progetto:
 **Aggiungi globalmente:**
 
 ```bash
-gemini mcp add -s user istat -- /path/to/istat_mcp_server/.venv/bin/python -m istat_mcp_server
+gemini mcp add -s user istat -- "/path/to/istat_mcp_server/.venv/bin/python" -m istat_mcp_server
 ```
 
 Oppure aggiungi manualmente a `~/.gemini/settings.json`:

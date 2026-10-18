@@ -1438,11 +1438,15 @@ When setting up CI (GitHub Actions, etc.):
 
 2. **Install the package**:
    ```bash
-   # Install in development mode
-   pip install -e .
+   # Creates .venv and installs the package in development mode
+   uv sync
    
    # Or with development dependencies
-   pip install -e ".[dev]"
+   uv sync --extra dev
+   
+   # Without uv
+   python3 -m venv .venv
+   .venv/bin/pip install -e ".[dev]"
    ```
 
 3. **Configure environment** (optional):
@@ -1455,9 +1459,6 @@ When setting up CI (GitHub Actions, etc.):
    ```bash
    # Run server (stdio mode for Claude Desktop)
    .venv/bin/python -m istat_mcp_server
-   
-   # Or using the installed command
-   istat-mcp-server
    ```
 
 ### Claude Desktop Configuration
