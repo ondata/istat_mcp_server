@@ -14,22 +14,22 @@ dependencies = [
     "cachetools>=5.3.0",
     "diskcache>=5.6.3",
     "tenacity>=8.2.0",
-    "pydantic>=2.14.0",
-    "python-dotenv>=1.0.0",
+    "pydantic>=2.14.1",
+    "python-dotenv>=1.2.4",
     "duckdb>=1.0.0",
 ]
 
 [project.optional-dependencies]
 # HTTP host (streamable-HTTP transport), see istat_mcp_server/http_server.py and the Dockerfile.
 http = [
-    "starlette>=0.37.0",
+    "starlette>=1.8.0",
     "uvicorn>=0.30.0",
 ]
 dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=0.23.0",
     "pytest-mock>=3.16.0",
-    "ruff>=0.1.0",
+    "ruff>=0.17.1",
 ]
 
 [project.scripts]
