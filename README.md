@@ -327,6 +327,10 @@ Check code:
 ruff check .
 ```
 
+### Checks before merging into `main`
+
+There are no versioned releases: whatever is merged into `main` is what users install. The [CI workflow](.github/workflows/ci.yml) runs `uv run pytest` and `uv run ruff check .` on every pull request and on every push to `main`, including Dependabot pull requests. Merge only when the check is green. Tests use mocked responses and do not call the ISTAT API, so a live test before important changes is still manual.
+
 ## Project Structure
 
 ```

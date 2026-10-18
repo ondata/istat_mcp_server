@@ -1,5 +1,9 @@
 # Log
 
+## 2026-10-18 (CI)
+
+- Add `.github/workflows/ci.yml`: `uv sync --all-extras`, `pytest`, `ruff check` on every PR and push to `main`; README/README_IT section on checks before rilascio (= merge into `main`, no versioned releases)
+
 ## 2026-10-18 (ruff)
 
 - `ruff check` from 93 errors to 0: `--fix` for 84 (whitespace, import order, unused imports, f-strings, `collections.abc`), the 13 W293 left inside docstrings via `--unsafe-fixes --select W293`, removed unused `error` in `server.py` `call_tool`
