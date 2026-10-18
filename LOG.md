@@ -1,5 +1,10 @@
 # Log
 
+## 2026-10-18 (ruff)
+
+- `ruff check` from 93 errors to 0: `--fix` for 84 (whitespace, import order, unused imports, f-strings, `collections.abc`), the 13 W293 left inside docstrings via `--unsafe-fixes --select W293`, removed unused `error` in `server.py` `call_tool`
+- Cause: ruff configured in `pyproject.toml` but never run (no pre-commit, no CI); 88 tests pass
+
 ## 2026-10-11
 
 - Merge dependabot #62-#66: lxml>=6.1.3, pydantic>=2.14.0, pytest>=9.1.1, pytest-mock>=3.16.0, build setuptools>=84.0.0

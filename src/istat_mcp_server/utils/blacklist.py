@@ -20,7 +20,7 @@ class DataflowBlacklist:
             blacklist_ids = self._load_from_env()
 
         self._blacklist = set(blacklist_ids)
-        
+
         if self._blacklist:
             logger.info(f'Blacklist initialized with {len(self._blacklist)} dataflow(s): {sorted(self._blacklist)}')
         else:
@@ -36,7 +36,7 @@ class DataflowBlacklist:
             List of blacklisted dataflow IDs
         """
         blacklist_str = os.getenv('DATAFLOW_BLACKLIST', '').strip()
-        
+
         if not blacklist_str:
             return []
 

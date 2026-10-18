@@ -2,10 +2,12 @@
 
 from unittest.mock import patch
 
-import pytest
-
-from istat_mcp_server.tools.get_data import _build_curl_info, _determine_default_periods, _parse_period, filter_tsv_by_time_period
-
+from istat_mcp_server.tools.get_data import (
+    _build_curl_info,
+    _determine_default_periods,
+    _parse_period,
+    filter_tsv_by_time_period,
+)
 
 # --- _parse_period tests ---
 

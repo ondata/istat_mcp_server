@@ -8,7 +8,6 @@ from mcp.types import TextContent
 
 from istat_mcp_server.tools.get_concepts import handle_get_concepts
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

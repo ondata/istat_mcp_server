@@ -2,8 +2,9 @@
 
 import json
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from mcp.types import TextContent
 from pydantic import BaseModel, ValidationError
@@ -95,27 +96,27 @@ def get_observed_data_cache_ttl() -> int:
 
 def format_json_response(data: dict[str, Any] | BaseModel) -> list[TextContent]:
     """Format data as JSON TextContent response.
-    
+
     Args:
         data: Dictionary or Pydantic model to serialize
-        
+
     Returns:
         List containing single TextContent with JSON-formatted text
     """
     if isinstance(data, BaseModel):
         data = data.model_dump()
-    
+
     response_text = json.dumps(data, indent=2, ensure_ascii=False)
     return [TextContent(type='text', text=response_text)]
 
 
 def ensure_model(data: Any, model_class: type[T]) -> T:
     """Convert dict to Pydantic model if needed.
-    
+
     Args:
         data: Data that may be dict or already a model instance
         model_class: Target Pydantic model class
-        
+
     Returns:
         Instance of model_class
     """
@@ -126,17 +127,17 @@ def ensure_model(data: Any, model_class: type[T]) -> T:
 
 def ensure_model_list(data_list: list[Any], model_class: type[T]) -> list[T]:
     """Convert list of dicts to list of Pydantic models if needed.
-    
+
     Args:
         data_list: List of items that may be dicts or model instances
         model_class: Target Pydantic model class
-        
+
     Returns:
         List of model_class instances
     """
     if not data_list:
         return []
-    
+
     if isinstance(data_list[0], dict):
         return [model_class.model_validate(item) for item in data_list]
     return data_list
@@ -228,13 +229,13 @@ def find_dataflow_info(
 
 def handle_tool_errors(func: Callable) -> Callable:
     """Decorator to handle common tool errors consistently.
-    
+
     Catches ValidationError, ApiError, and generic Exception,
     logs them appropriately, and returns error messages as TextContent.
-    
+
     Args:
         func: Async tool handler function to wrap
-        
+
     Returns:
         Wrapped function with error handling
     """
@@ -242,20 +243,20 @@ def handle_tool_errors(func: Callable) -> Callable:
     async def wrapper(*args, **kwargs) -> list[TextContent]:
         try:
             return await func(*args, **kwargs)
-        
+
         except ValidationError as e:
             error_msg = f'Invalid input: {e}'
             logger.error(error_msg)
             return [TextContent(type='text', text=error_msg)]
-        
+
         except ApiError as e:
             error_msg = f'API error {e.status_code}: {e.message}'
             logger.error(error_msg)
             return [TextContent(type='text', text=error_msg)]
-        
+
         except Exception as e:
             error_msg = f'Unexpected error: {str(e)}'
             logger.exception(error_msg)
             return [TextContent(type='text', text=error_msg)]
-    
+
     return wrapper

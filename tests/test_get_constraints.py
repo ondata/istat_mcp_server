@@ -3,8 +3,8 @@
 import pytest
 
 from istat_mcp_server.api.models import (
-    CodeValue,
     CodelistInfo,
+    CodeValue,
     ConstraintInfo,
     ConstraintValue,
     DataflowInfo,
@@ -119,15 +119,15 @@ async def test_get_constraints_success(mock_cache_manager, mock_api_client):
     # Verify result
     assert len(result) == 1
     assert result[0].type == 'text'
-    
+
     # Parse JSON response
     import json
     response = json.loads(result[0].text)
-    
+
     # Verify response structure
     assert response['id_dataflow'] == '101_1015_DF_DCSP_COLTIVAZIONI_1'
     assert len(response['constraints']) == 3
-    
+
     # Verify FREQ dimension
     freq_dim = response['constraints'][0]
     assert freq_dim['dimension'] == 'FREQ'
@@ -136,7 +136,7 @@ async def test_get_constraints_success(mock_cache_manager, mock_api_client):
     assert freq_dim['values'][0]['code'] == 'A'
     assert freq_dim['values'][0]['description_en'] == 'Annual'
     assert freq_dim['values'][0]['description_it'] == 'Annuale'
-    
+
     # Verify TYPE_OF_CROP dimension
     crop_dim = response['constraints'][1]
     assert crop_dim['dimension'] == 'TYPE_OF_CROP'
@@ -144,7 +144,7 @@ async def test_get_constraints_success(mock_cache_manager, mock_api_client):
     assert len(crop_dim['values']) == 2
     assert crop_dim['values'][0]['code'] == 'APPLE'
     assert crop_dim['values'][0]['description_en'] == 'Apples'
-    
+
     # Verify TIME_PERIOD dimension
     time_dim = response['constraints'][2]
     assert time_dim['dimension'] == 'TIME_PERIOD'
@@ -252,10 +252,10 @@ async def test_get_constraints_missing_codelist(
     # Verify result - should still return values without descriptions
     assert len(result) == 1
     assert result[0].type == 'text'
-    
+
     import json
     response = json.loads(result[0].text)
-    
+
     # Should have dimension with values but no descriptions
     assert len(response['constraints']) == 1
     dim = response['constraints'][0]

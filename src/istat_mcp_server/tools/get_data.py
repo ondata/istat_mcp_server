@@ -13,7 +13,6 @@ from mcp.types import TextContent
 from ..api.client import ApiClient
 from ..api.models import ConstraintInfo, GetDataInput, TimeConstraintValue
 from ..cache.manager import CacheManager
-from ..utils.validators import validate_dataflow_id
 from ..utils.blacklist import DataflowBlacklist
 from ..utils.tool_helpers import (
     find_dataflow_info,
@@ -22,6 +21,7 @@ from ..utils.tool_helpers import (
     get_observed_data_cache_ttl,
     handle_tool_errors,
 )
+from ..utils.validators import validate_dataflow_id
 
 logger = logging.getLogger(__name__)
 
@@ -35,26 +35,26 @@ NAMESPACES = {
 
 def parse_sdmx_to_table(xml_content: str, dataflow_full_id: str) -> str:
     """Parse SDMX XML and convert to TSV table format.
-    
+
     Args:
         xml_content: Raw SDMX XML content
         dataflow_full_id: Full dataflow ID (e.g., 'IT1:149_577_DF_DCSC_OROS_1_1(1.0)')
-        
+
     Returns:
         TSV formatted table as string
     """
     root = etree.fromstring(xml_content.encode('utf-8'))
-    
+
     # Extract all series
     series_list = root.xpath('//generic:Series', namespaces=NAMESPACES)
-    
+
     if not series_list:
         return "DATAFLOW\tERROR\nNo data found in response"
-    
+
     rows = []
     header = ['DATAFLOW']
     header_set = False
-    
+
     for series in series_list:
         # Extract series-level dimensions
         series_dims = {}
@@ -62,31 +62,31 @@ def parse_sdmx_to_table(xml_content: str, dataflow_full_id: str) -> str:
             dim_id = series_key.get('id', '')
             dim_value = series_key.get('value', '')
             series_dims[dim_id] = dim_value
-        
+
         # Extract observations
         for obs in series.xpath('.//generic:Obs', namespaces=NAMESPACES):
             row_data = {'DATAFLOW': dataflow_full_id}
-            
+
             # Add series dimensions
             row_data.update(series_dims)
-            
+
             # Extract observation-level dimensions and attributes
             for obs_dim in obs.xpath('.//generic:ObsDimension', namespaces=NAMESPACES):
                 dim_id = obs_dim.get('id', '')
                 dim_value = obs_dim.get('value', '')
                 row_data[dim_id] = dim_value
-            
+
             # Extract observation value
             obs_value_elem = obs.xpath('.//generic:ObsValue', namespaces=NAMESPACES)
             if obs_value_elem:
                 row_data['OBS_VALUE'] = obs_value_elem[0].get('value', '')
-            
+
             # Extract attributes
             for attr in obs.xpath('.//generic:Attributes/generic:Value', namespaces=NAMESPACES):
                 attr_id = attr.get('id', '')
                 attr_value = attr.get('value', '')
                 row_data[attr_id] = attr_value
-            
+
             # Build header from first row
             if not header_set:
                 # Preserve order: DATAFLOW, dimensions (except TIME_PERIOD), TIME_PERIOD, OBS_VALUE, attributes
@@ -95,26 +95,26 @@ def parse_sdmx_to_table(xml_content: str, dataflow_full_id: str) -> str:
                 if 'TIME_PERIOD' in row_data:
                     header.append('TIME_PERIOD')
                 header.append('OBS_VALUE')
-                
+
                 # Add attribute columns
                 attr_keys = [k for k in row_data.keys() if k.startswith('OBS_') and k != 'OBS_VALUE']
                 attr_keys.extend([k for k in row_data.keys() if k.startswith('NOTE_')])
                 header.extend(sorted(set(attr_keys)))
-                
+
                 header_set = True
-            
+
             # Build row respecting header order
             row = []
             for col in header:
                 row.append(row_data.get(col, ''))
-            
+
             rows.append(row)
-    
+
     # Build TSV output
     output_lines = ['\t'.join(header)]
     for row in rows:
         output_lines.append('\t'.join(row))
-    
+
     return '\n'.join(output_lines)
 
 
@@ -257,10 +257,10 @@ def _extract_dimension_order(constraints: ConstraintInfo) -> tuple[list[str], st
 
 def _determine_default_periods(time_period_end: str | None) -> tuple[str, str]:
     """Determine default start/end periods if not specified by user.
-    
+
     Args:
         time_period_end: End period from TIME_PERIOD constraint
-        
+
     Returns:
         Tuple of (start_period, end_period) as strings
     """
@@ -402,7 +402,7 @@ async def handle_get_data(
     for dimension_id in dimension_order:
         filter_values = params.dimension_filters.get(dimension_id, []) if params.dimension_filters else []
         ordered_dimension_filters.append(filter_values)
-    
+
     logger.info(f'get_data: Built ordered filters: {ordered_dimension_filters}')
 
     # Step 5: Build cache key

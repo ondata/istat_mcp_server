@@ -143,13 +143,13 @@ class ApiClient:
         url = f'{self._base_url}/{path.lstrip("/")}'
         request_timeout = timeout if timeout is not None else self._timeout
         start_time = time.time()
-        
+
         try:
             # Log chiamata HTTP con parametri
             logger.info(f'→ HTTP GET: {url}')
             if params:
                 logger.debug(f'  Query params: {params}')
-            
+
             response = await self._client.get(
                 url,
                 params=params,
@@ -157,13 +157,13 @@ class ApiClient:
                 timeout=request_timeout,
             )
             response.raise_for_status()
-            
+
             # Log risposta con dettagli
             elapsed = time.time() - start_time
             logger.info(f'← HTTP {response.status_code}: {len(response.content)} bytes in {elapsed:.3f}s')
-            
+
             return response
-            
+
         except httpx.TimeoutException as e:
             elapsed = time.time() - start_time
             logger.error(
@@ -335,7 +335,7 @@ class ApiClient:
         dimensions = []
         for dim_elem in root.xpath('//structure:Dimension', namespaces=NAMESPACES):
             dimension = dim_elem.get('id', '')
-            
+
             # Skip dimensions without ID (empty or malformed)
             if not dimension:
                 continue
@@ -373,7 +373,7 @@ class ApiClient:
         )
 
         dimensions = []
-        
+
         # Navigate JSON structure: data.contentConstraints[0].cubeRegions[0].keyValues
         try:
             content_constraints = data.get('data', {}).get('contentConstraints', [])
@@ -381,10 +381,10 @@ class ApiClient:
                 cube_regions = content_constraints[0].get('cubeRegions', [])
                 if cube_regions:
                     key_values = cube_regions[0].get('keyValues', [])
-                    
+
                     for kv in key_values:
                         dimension_id = kv.get('id', '')
-                        
+
                         # Check if this has a timeRange (TIME_PERIOD dimension)
                         if 'timeRange' in kv:
                             time_range = kv['timeRange']
@@ -400,7 +400,7 @@ class ApiClient:
                             # Regular dimension - extract all values
                             value_list = kv.get('values', [])
                             values = [ConstraintValue(value=str(v)) for v in value_list]
-                        
+
                         dimensions.append(DimensionConstraint(dimension=dimension_id, values=values))
         except (KeyError, IndexError, TypeError) as e:
             logger.warning(f'Error parsing constraints JSON: {e}')
@@ -547,7 +547,7 @@ class ApiClient:
         # - I codici dalle codelists vanno usati esattamente come sono (es: 1092 non 10.92)
         # - Il numero di argomenti deve essere pari al numero di dimensioni
         # Esempio: A.IT.LU.1092. -> 5 dimensioni (ultima vuota, indicata dal punto finale)
-        
+
         # Build dimension path using list comprehension
         dim_path = '.'.join(
             '+'.join(f) if f else '' for f in ordered_dimension_filters

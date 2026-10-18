@@ -22,7 +22,7 @@ class PersistentCache:
             cache_dir: Directory for cache files
         """
         self._cache_dir = Path(cache_dir)
-        
+
         # Try to create the cache directory
         try:
             self._cache_dir.mkdir(parents=True, exist_ok=True)
@@ -40,7 +40,7 @@ class PersistentCache:
             self._cache_dir = Path(tempfile.gettempdir()) / 'istat_mcp_cache'
             self._cache_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f'PersistentCache using fallback directory: {self._cache_dir}')
-        
+
         self._cache = Cache(str(self._cache_dir))
 
     def get(self, key: str) -> Any | None:
@@ -76,11 +76,11 @@ class PersistentCache:
         # Serialize Pydantic models and lists
         if isinstance(value, BaseModel):
             value = json.dumps(value.model_dump())
-            logger.debug(f'PersistentCache: Serialized BaseModel to JSON')
+            logger.debug('PersistentCache: Serialized BaseModel to JSON')
         elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], BaseModel):
             value = json.dumps([item.model_dump() for item in value])
             logger.debug(f'PersistentCache: Serialized list of {len(value)} BaseModel to JSON')
-        
+
         if ttl is not None:
             self._cache.set(key, value, expire=ttl)
         else:

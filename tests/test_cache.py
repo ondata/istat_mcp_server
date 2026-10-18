@@ -2,10 +2,6 @@
 
 import pytest
 
-from istat_mcp_server.cache.manager import CacheManager
-from istat_mcp_server.cache.memory import MemoryCache
-from istat_mcp_server.cache.persistent import PersistentCache
-
 
 def test_memory_cache_basic(memory_cache):
     """Test basic memory cache operations."""
