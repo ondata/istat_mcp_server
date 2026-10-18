@@ -1,5 +1,10 @@
 # Log
 
+## 2026-10-18 (#68 and follow-up)
+
+- #68 (Paolo Valletta): MCP client examples use the venv interpreter (`.venv/bin/python`, `.venv\Scripts\python.exe`), no `--cwd`; copilot guide fixed from `istat_mcp_server.server` (no `__main__`, exits at once) to `istat_mcp_server`; closes #55
+- Follow-up to the two Greptile P2 comments on #68, missed before merging: interpreter path quoted in the `claude mcp add` / `gemini mcp add` commands (tested: with a space in the path, unquoted gives `not found`, quoted starts the server); copilot quick start now creates `.venv` (`uv sync`, or `python3 -m venv` + pip) and no longer names `istat-mcp-server`, which is not a console script
+
 ## 2026-10-18 (CI rule)
 
 - Ruleset `protect-main` (id 14475862): added required status check `test` (GitHub Actions CI) next to the existing deletion and non-fast-forward rules; no bypass actors, so it applies to admins too and blocks direct pushes to `main`
