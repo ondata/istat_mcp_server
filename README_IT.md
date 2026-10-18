@@ -90,7 +90,7 @@ Questo server funziona con qualsiasi client compatibile con MCP. Le sezioni segu
 
 [Claude Desktop](#claude-desktop) | [Claude Code](#claude-code) | [Gemini CLI](#gemini-cli) | [VS Code](#vs-code) | [Codex CLI](#codex-cli) | [Claude Desktop su Windows con Python su WSL2](#claude-desktop-su-windows-con-python-su-wsl2)
 
-> In tutti gli esempi, sostituisci `/path/to/istat_mcp_server` con il percorso reale di questa directory, e `python3` con `python` se sul tuo sistema è disponibile solo il comando `python`.
+> In tutti gli esempi, sostituisci `/path/to/istat_mcp_server` con il percorso reale di questa directory. Gli esempi avviano il server con l'interprete dell'ambiente virtuale creato dall'installazione (`/path/to/istat_mcp_server/.venv/bin/python`, oppure `C:\path\to\istat_mcp_server\.venv\Scripts\python.exe` su Windows): `uv sync` installa il pacchetto lì, quindi lanciando un `python3` preso dal PATH l'import di solito fallisce.
 
 ### Claude Desktop
 
@@ -104,7 +104,7 @@ Aggiungi al file di configurazione di Claude Desktop:
 {
   "mcpServers": {
     "istat": {
-      "command": "python3",
+      "command": "/path/to/istat_mcp_server/.venv/bin/python",
       "args": ["-m", "istat_mcp_server"],
       "cwd": "/path/to/istat_mcp_server"
     }
@@ -112,20 +112,20 @@ Aggiungi al file di configurazione di Claude Desktop:
 }
 ```
 
-**Nota**: se `python3` non viene trovato nel PATH del sistema, sostituisci `"python3"` in `"command"` con il path assoluto dell'eseguibile Python (ad esempio `/usr/bin/python3` o `C:\Python311\python.exe`).
+**Nota**: su Windows l'interprete è `C:\path\to\istat_mcp_server\.venv\Scripts\python.exe` (nel JSON le barre vanno raddoppiate). Il pacchetto viene trovato da qualunque cartella e la cache finisce nella cartella `cache` del repository, salvo che `PERSISTENT_CACHE_DIR` dica altro.
 
 ### Claude Code
 
 **Aggiungi globalmente** (disponibile in tutti i tuoi progetti):
 
 ```bash
-claude mcp add -s user istat -- python3 -m istat_mcp_server --cwd /path/to/istat_mcp_server
+claude mcp add -s user istat -- /path/to/istat_mcp_server/.venv/bin/python -m istat_mcp_server
 ```
 
 **Aggiungi solo per il progetto corrente** (crea o aggiorna `.mcp.json` nella cartella del progetto):
 
 ```bash
-claude mcp add istat -- python3 -m istat_mcp_server --cwd /path/to/istat_mcp_server
+claude mcp add istat -- /path/to/istat_mcp_server/.venv/bin/python -m istat_mcp_server
 ```
 
 Oppure aggiungi manualmente a `.mcp.json` nella root del tuo progetto:
@@ -134,7 +134,7 @@ Oppure aggiungi manualmente a `.mcp.json` nella root del tuo progetto:
 {
   "mcpServers": {
     "istat": {
-      "command": "python3",
+      "command": "/path/to/istat_mcp_server/.venv/bin/python",
       "args": ["-m", "istat_mcp_server"],
       "cwd": "/path/to/istat_mcp_server"
     }
@@ -149,7 +149,7 @@ Oppure aggiungi manualmente a `.mcp.json` nella root del tuo progetto:
 **Aggiungi globalmente:**
 
 ```bash
-gemini mcp add -s user istat -- python3 -m istat_mcp_server --cwd /path/to/istat_mcp_server
+gemini mcp add -s user istat -- /path/to/istat_mcp_server/.venv/bin/python -m istat_mcp_server
 ```
 
 Oppure aggiungi manualmente a `~/.gemini/settings.json`:
@@ -158,7 +158,7 @@ Oppure aggiungi manualmente a `~/.gemini/settings.json`:
 {
   "mcpServers": {
     "istat": {
-      "command": "python3",
+      "command": "/path/to/istat_mcp_server/.venv/bin/python",
       "args": ["-m", "istat_mcp_server"],
       "cwd": "/path/to/istat_mcp_server"
     }
@@ -174,7 +174,7 @@ Aggiungi alle impostazioni utente o a `.vscode/settings.json`:
 {
   "mcpServers": {
     "istat": {
-      "command": "python3",
+      "command": "/path/to/istat_mcp_server/.venv/bin/python",
       "args": ["-m", "istat_mcp_server"],
       "cwd": "/path/to/istat_mcp_server"
     }
@@ -188,7 +188,7 @@ Aggiungi a `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.istat]
-command = "python3"
+command = "/path/to/istat_mcp_server/.venv/bin/python"
 args = ["-m", "istat_mcp_server"]
 cwd = "/path/to/istat_mcp_server"
 ```

@@ -1454,7 +1454,7 @@ When setting up CI (GitHub Actions, etc.):
 4. **Test the server** (manual run):
    ```bash
    # Run server (stdio mode for Claude Desktop)
-   python -m istat_mcp_server.server
+   .venv/bin/python -m istat_mcp_server
    
    # Or using the installed command
    istat-mcp-server
@@ -1477,8 +1477,8 @@ Edit your Claude Desktop configuration file:
 {
   "mcpServers": {
     "istat": {
-      "command": "python",
-      "args": ["-m", "istat_mcp_server.server"],
+      "command": "/absolute/path/to/istat_mcp_server/.venv/bin/python",
+      "args": ["-m", "istat_mcp_server"],
       "env": {
         "PERSISTENT_CACHE_DIR": "C:\\Users\\YourName\\istat_cache",
         "LOG_LEVEL": "INFO"
@@ -1491,7 +1491,7 @@ Edit your Claude Desktop configuration file:
 **Important**: 
 - Use absolute paths for `PERSISTENT_CACHE_DIR`
 - On Windows, use double backslashes `\\` or forward slashes `/` in paths
-- Make sure `python` is in your system PATH and points to the environment where you installed the package
+- Use the interpreter of the environment where the package is installed (`/absolute/path/to/istat_mcp_server/.venv/bin/python`, or `C:\path\to\istat_mcp_server\.venv\Scripts\python.exe` on Windows): a bare `python` from the PATH usually has no `istat_mcp_server` module
 
 #### Option 2: Using uv (Recommended)
 
@@ -1507,7 +1507,7 @@ Edit your Claude Desktop configuration file:
         "--project",
         "C:/Users/YourName/istat_mcp_server",
         "-m",
-        "istat_mcp_server.server"
+        "istat_mcp_server"
       ],
       "env": {
         "LOG_LEVEL": "INFO"
@@ -1532,7 +1532,7 @@ If you're using a virtual environment:
   "mcpServers": {
     "istat": {
       "command": "/absolute/path/to/venv/bin/python",
-      "args": ["-m", "istat_mcp_server.server"],
+      "args": ["-m", "istat_mcp_server"],
       "env": {
         "PERSISTENT_CACHE_DIR": "/absolute/path/to/cache"
       }
@@ -1547,7 +1547,7 @@ If you're using a virtual environment:
   "mcpServers": {
     "istat": {
       "command": "C:\\path\\to\\venv\\Scripts\\python.exe",
-      "args": ["-m", "istat_mcp_server.server"],
+      "args": ["-m", "istat_mcp_server"],
       "env": {
         "PERSISTENT_CACHE_DIR": "C:\\path\\to\\cache"
       }
@@ -1596,7 +1596,7 @@ The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is an int
 npm install -g @modelcontextprotocol/inspector
 
 # Run server with inspector
-npx @modelcontextprotocol/inspector python -m istat_mcp_server.server
+npx @modelcontextprotocol/inspector .venv/bin/python -m istat_mcp_server
 ```
 
 This opens a web interface where you can:
@@ -1616,7 +1616,7 @@ set LOG_LEVEL=DEBUG     # Windows CMD
 $env:LOG_LEVEL="DEBUG"  # Windows PowerShell
 
 # Run server
-python -m istat_mcp_server.server
+.venv/bin/python -m istat_mcp_server
 ```
 
 Debug logs include:
