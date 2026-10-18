@@ -1,5 +1,10 @@
 # Log
 
+## 2026-10-18 (tests, mcp 2.x)
+
+- `tests/test_http_server.py`: `PERSISTENT_CACHE_DIR` in `tmp_path` too (as in `tests/test_server.py`); before, the 5 HTTP tests touched 3 files in `./cache`, now the full suite touches none
+- #70 (mcp 2.x) closed via `@dependabot ignore this major version`; migration tracked in #79
+
 ## 2026-10-18 (version)
 
 - `serverInfo.version` was the `mcp` library version (1.30.0): `Server()` now gets `importlib.metadata.version('istat-mcp-server')` (0.1.0), closes #77; test in `tests/test_server.py`, live `initialize` checked
