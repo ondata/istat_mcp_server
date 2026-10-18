@@ -15,7 +15,7 @@ dependencies = [
     "diskcache>=5.6.3",
     "tenacity>=8.2.0",
     "pydantic>=2.14.0",
-    "python-dotenv>=1.0.0",
+    "python-dotenv>=1.2.4",
     "duckdb>=1.0.0",
 ]
 
