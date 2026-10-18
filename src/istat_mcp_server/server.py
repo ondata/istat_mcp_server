@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import time
+from importlib.metadata import version
 from typing import Any
 
 from dotenv import load_dotenv
@@ -93,7 +94,7 @@ def create_server() -> Server:
     logger.info('Dataflow blacklist initialized')
 
     # Create MCP server
-    server = Server('istat-mcp-server')
+    server = Server('istat-mcp-server', version=version('istat-mcp-server'))
     logger.info('MCP server created')
 
     # Register tools

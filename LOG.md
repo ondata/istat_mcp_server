@@ -1,5 +1,9 @@
 # Log
 
+## 2026-10-18 (version)
+
+- `serverInfo.version` was the `mcp` library version (1.30.0): `Server()` now gets `importlib.metadata.version('istat-mcp-server')` (0.1.0), closes #77; test in `tests/test_server.py`, live `initialize` checked
+
 ## 2026-10-18 (CI)
 
 - Add `.github/workflows/ci.yml`: `uv sync --all-extras`, `pytest`, `ruff check` on every PR and push to `main`; README/README_IT section on checks before rilascio (= merge into `main`, no versioned releases)
