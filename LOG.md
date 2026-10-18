@@ -1,5 +1,11 @@
 # Log
 
+## 2026-10-18 (CI rule)
+
+- Ruleset `protect-main` (id 14475862): added required status check `test` (GitHub Actions CI) next to the existing deletion and non-fast-forward rules; no bypass actors, so it applies to admins too and blocks direct pushes to `main`
+- Branch does not need to be up to date with `main` before merging (`strict_required_status_checks_policy: false`); Greptile is not required
+- Verified: #68 (opened before the CI existed) shows `mergeStateStatus: BLOCKED`
+
 ## 2026-10-18 (tests, mcp 2.x)
 
 - `tests/test_http_server.py`: `PERSISTENT_CACHE_DIR` in `tmp_path` too (as in `tests/test_server.py`); before, the 5 HTTP tests touched 3 files in `./cache`, now the full suite touches none
