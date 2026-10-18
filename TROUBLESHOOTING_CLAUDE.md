@@ -4,7 +4,7 @@
 
 ### ✅ Cosa funziona
 - Il server ISTAT MCP è stato **usato con successo ieri sera** (12 marzo 2026 21:50)
-- Il server si avvia correttamente da command line: `python -m istat_mcp_server`
+- Il server si avvia correttamente da command line, con l'interprete dell'ambiente virtuale: `.venv\Scripts\python.exe -m istat_mcp_server`
 - Il codice è corretto e tutti i test passano
 
 ### ❌ Problema attuale
