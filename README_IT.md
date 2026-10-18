@@ -280,6 +280,10 @@ Controlla il codice:
 ruff check .
 ```
 
+### Controlli prima del rilascio
+
+Non ci sono versioni numerate: rilasciare significa unire una pull request in `main`, ed è quello che installa chi usa il server. Il [workflow CI](.github/workflows/ci.yml) esegue `uv run pytest` e `uv run ruff check .` su ogni pull request e su ogni push in `main`, comprese quelle di Dependabot. Si unisce solo con il controllo verde. I test usano risposte simulate e non chiamano le API ISTAT: una prova dal vivo prima delle modifiche importanti resta manuale.
+
 ## Struttura progetto
 
 ```
