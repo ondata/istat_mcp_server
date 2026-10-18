@@ -24,9 +24,9 @@ from .tools import (
     handle_get_structure,
     handle_get_territorial_codes,
 )
-from .utils.tool_helpers import configure_cache_ttls
-from .utils.logging import setup_logging
 from .utils.blacklist import DataflowBlacklist
+from .utils.logging import setup_logging
+from .utils.tool_helpers import configure_cache_ttls
 
 logger = logging.getLogger(__name__)
 
@@ -270,14 +270,13 @@ def create_server() -> Server:
     async def call_tool(name: str, arguments: dict[str, Any]) -> list[Any]:
         """Handle tool calls with detailed logging."""
         start_time = time.time()
-        
+
         # Log inizio chiamata
         logger.info('=' * 80)
         logger.info(f'MCP TOOL CALL: {name}')
         logger.info(f'Arguments: {json.dumps(arguments, indent=2, ensure_ascii=False)}')
-        
+
         result = None
-        error = None
 
         try:
             if name == 'discover_dataflows':
@@ -300,7 +299,7 @@ def create_server() -> Server:
                 result = await handle_get_territorial_codes(arguments)
             else:
                 raise ValueError(f'Unknown tool: {name}')
-            
+
             # Log successo
             elapsed_time = time.time() - start_time
             response_size = len(str(result)) if result else 0
@@ -308,7 +307,7 @@ def create_server() -> Server:
             logger.info(f'Execution time: {elapsed_time:.3f}s')
             logger.info(f'Response size: {response_size} bytes')
             logger.info('=' * 80)
-            
+
             return result
 
         except Exception as e:
@@ -318,7 +317,7 @@ def create_server() -> Server:
             logger.error(f'Error type: {type(e).__name__}')
             logger.error(f'Error message: {str(e)}')
             logger.error(f'Execution time: {elapsed_time:.3f}s')
-            logger.exception(f'Full traceback:')
+            logger.exception('Full traceback:')
             logger.info('=' * 80)
             raise
 

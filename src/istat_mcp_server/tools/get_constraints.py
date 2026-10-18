@@ -15,7 +15,6 @@ from ..api.models import (
     TimeConstraintValue,
 )
 from ..cache.manager import CacheManager
-from ..utils.validators import validate_dataflow_id
 from ..utils.tool_helpers import (
     find_dataflow_info,
     format_json_response,
@@ -25,6 +24,7 @@ from ..utils.tool_helpers import (
     get_cached_datastructure,
     handle_tool_errors,
 )
+from ..utils.validators import validate_dataflow_id
 
 logger = logging.getLogger(__name__)
 
@@ -121,12 +121,12 @@ async def build_constraints_output(
 
     # Step 2: Fetch constraints (available values for each dimension)
     # This returns only the values that are actually available for this dataflow
-    logger.info(f'Getting constraints (checks cache first, then API if needed)')
+    logger.info('Getting constraints (checks cache first, then API if needed)')
     constraints = await get_cached_constraints(cache, api, dataflow_id)
 
     # Step 3: Call get_structure internally to get dimension-codelist mapping
     # This is equivalent to calling the get_structure tool
-    logger.info(f'Getting datastructure (checks cache first, then API if needed)')
+    logger.info('Getting datastructure (checks cache first, then API if needed)')
     datastructure = await get_cached_datastructure(
         cache,
         api,

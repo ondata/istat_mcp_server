@@ -8,13 +8,13 @@ from mcp.types import TextContent
 from ..api.client import ApiClient
 from ..api.models import DiscoverDataflowsInput
 from ..cache.manager import CacheManager
-from ..utils.validators import validate_keywords
 from ..utils.blacklist import DataflowBlacklist
 from ..utils.tool_helpers import (
     format_json_response,
     get_cached_dataflows,
     handle_tool_errors,
 )
+from ..utils.validators import validate_keywords
 
 logger = logging.getLogger(__name__)
 

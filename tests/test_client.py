@@ -1,7 +1,7 @@
 """Tests for API client error handling."""
 
-import pytest
 import httpx
+import pytest
 
 from istat_mcp_server.api.client import ApiClient, ApiError, RateLimiter
 

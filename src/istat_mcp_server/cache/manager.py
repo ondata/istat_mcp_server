@@ -1,7 +1,8 @@
 """Cache manager providing unified interface to two-layer cache."""
 
 import logging
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from .memory import MemoryCache
 from .persistent import PersistentCache

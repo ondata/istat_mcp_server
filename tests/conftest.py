@@ -1,7 +1,8 @@
 """Pytest configuration and fixtures."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from istat_mcp_server.api.client import ApiClient
 from istat_mcp_server.cache.manager import CacheManager

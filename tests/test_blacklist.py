@@ -3,8 +3,6 @@
 import os
 from unittest.mock import patch
 
-import pytest
-
 from istat_mcp_server.api.models import DataflowInfo
 from istat_mcp_server.utils.blacklist import DataflowBlacklist
 
