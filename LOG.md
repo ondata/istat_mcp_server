@@ -1,5 +1,10 @@
 # Log
 
+## 2026-11-15 (dependencies)
+
+- Dependabot #83-#87 combined in one PR with `uv.lock` regenerated: duckdb 1.5.1 -> 2.0.0 (floor >=2.0.0), pytest-asyncio 1.3.0 -> 1.5.0, pytest-mock 3.16.0 -> 3.17.0, tenacity 9.1.4 -> 9.2.1, setuptools build floor >=84.2.1
+- duckdb 2.0 checked on the real `istat_lookup.duckdb` (storage `v1.0.0+`, opened read-only, file hash unchanged): `get_territorial_codes` returns regions, Palermo `082053`, 9 Sicilian provinces; tests use a temp DB, so CI alone does not cover the shipped file; duckdb 2.0 wheels: cp311 and cp312-abi3 for Linux, macOS, Windows
+
 ## 2026-11-15 (releases)
 
 - Versioned releases start: `version` 0.2.0 in `pyproject.toml` (and `uv.lock`); first tag `v0.2.0` (annotated), no PyPI
