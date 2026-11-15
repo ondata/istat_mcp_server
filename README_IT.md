@@ -50,6 +50,8 @@ git clone https://github.com/ondata/istat_mcp_server.git
 cd istat_mcp_server
 ```
 
+Così si ottiene `main`, la versione di sviluppo. Per installare una release precisa si clona il suo tag, per esempio `git clone --branch v0.2.0 https://github.com/ondata/istat_mcp_server.git`, oppure si esegue `git checkout v0.2.0` in un clone esistente. L'elenco è nella [pagina delle release](https://github.com/ondata/istat_mcp_server/releases).
+
 2. Crea un virtual environment e installa le dipendenze (richiesto Python >=3.11):
 
 **Con uv (consigliato):**
@@ -280,9 +282,24 @@ Controlla il codice:
 ruff check .
 ```
 
-### Controlli prima del rilascio
+### Controlli prima dell'unione in `main`
 
-Non ci sono versioni numerate: rilasciare significa unire una pull request in `main`, ed è quello che installa chi usa il server. Il [workflow CI](.github/workflows/ci.yml) esegue `uv run pytest` e `uv run ruff check .` su ogni pull request e su ogni push in `main`, comprese quelle di Dependabot. Si unisce solo con il controllo verde. I test usano risposte simulate e non chiamano le API ISTAT: una prova dal vivo prima delle modifiche importanti resta manuale.
+Il [workflow CI](.github/workflows/ci.yml) esegue `uv run pytest` e `uv run ruff check .` su ogni pull request e su ogni push in `main`, comprese quelle di Dependabot. Si unisce solo con il controllo verde. I test usano risposte simulate e non chiamano le API ISTAT: una prova dal vivo prima delle modifiche importanti resta manuale.
+
+### Release
+
+`main` è la versione di sviluppo. Le release sono tag git `vX.Y.Z` secondo il [versionamento semantico](https://semver.org/lang/it/), pubblicate nella [pagina delle release](https://github.com/ondata/istat_mcp_server/releases); si fanno quando serve, senza una cadenza fissa. Il pacchetto non è pubblicato su PyPI.
+
+Per fare una release:
+
+1. Aprire una pull request che imposta la nuova `version` in `pyproject.toml` ed esegue `uv lock`, poi unirla.
+2. Creare il tag sul commit di merge e inviarlo:
+```bash
+git switch main && git pull
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin v0.2.0
+```
+3. Il [workflow di release](.github/workflows/release.yml) controlla che il tag coincida con la versione in `pyproject.toml`, esegue test e lint e crea la release GitHub, con le note generate dalle pull request unite. Se tag e versione sono diversi si ferma senza creare nulla: si cancella il tag (`git push origin :v0.2.0`), si corregge la versione e si rifà il tag.
 
 ## Struttura progetto
 
