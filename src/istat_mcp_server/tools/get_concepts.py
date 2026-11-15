@@ -60,6 +60,10 @@ async def handle_get_concepts(
             '-m',
             'istat_mcp_server.cli.get_concepts_cli',
             params.concept_id,
+            # Il figlio non deve ereditare lo stdin del server: in stdio è la pipe del protocollo
+            # MCP, e su Windows il figlio resta bloccato finché il client non chiude la pipe:
+            # la chiamata va in timeout.
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
