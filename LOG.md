@@ -1,5 +1,9 @@
 # Log
 
+## 2026-11-15 (v0.2.1)
+
+- Release v0.2.1: dependency updates from #90 (duckdb 2.0, tenacity 9.2.1, dev tools)
+
 ## 2026-11-15 (dependencies)
 
 - Dependabot #83-#87 combined in one PR with `uv.lock` regenerated: duckdb 1.5.1 -> 2.0.0 (floor >=2.0.0), pytest-asyncio 1.3.0 -> 1.5.0, pytest-mock 3.16.0 -> 3.17.0, tenacity 9.1.4 -> 9.2.1, setuptools build floor >=84.2.1
