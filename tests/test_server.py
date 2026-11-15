@@ -27,3 +27,10 @@ def test_server_info_reports_project_version():
     options = create_server().create_initialization_options()
     assert options.server_name == 'istat-mcp-server'
     assert options.server_version == version('istat-mcp-server')
+
+
+def test_package_version_matches_metadata():
+    """__version__ follows the installed package version, not a hardcoded string."""
+    import istat_mcp_server
+
+    assert istat_mcp_server.__version__ == version('istat-mcp-server')

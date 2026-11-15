@@ -1,6 +1,6 @@
 [project]
 name = "istat-mcp-server"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server for accessing Italian ISTAT statistical data via SDMX API"
 readme = "README.md"
 requires-python = ">=3.11"

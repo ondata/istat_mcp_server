@@ -1,5 +1,11 @@
 # Log
 
+## 2026-11-15 (releases)
+
+- Versioned releases start: `version` 0.2.0 in `pyproject.toml` (and `uv.lock`); first tag `v0.2.0` (annotated), no PyPI
+- `.github/workflows/release.yml`: on push of a `v*` tag, fails if the tag differs from `v` + `pyproject.toml` version, then pytest + ruff, then `gh release create --generate-notes --verify-tag`; tag check tried locally with matching and non-matching tag, `actionlint` clean
+- README/README_IT: install a specific release (`git clone --branch vX.Y.Z`), new «Releases» section with the release procedure; releases made when needed, no fixed cadence; `v*` tags not protected by a ruleset
+
 ## 2026-11-15 (#88)
 
 - #88 (joylifet): `get_concepts` CLI subprocess started with `stdin=DEVNULL`; over stdio the inherited stdin is the MCP pipe and on Windows the child blocked until timeout (reported: 120 s timeout before, ~2.2 s after, Windows 11 / Python 3.14); new test asserts the DEVNULL stdin, does not reproduce the hang (CI is Linux)

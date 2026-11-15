@@ -55,6 +55,8 @@ git clone https://github.com/ondata/istat_mcp_server.git
 cd istat_mcp_server
 ```
 
+This gives you `main`, the development version. To install a specific release instead, clone its tag, for example `git clone --branch v0.2.0 https://github.com/ondata/istat_mcp_server.git`, or run `git checkout v0.2.0` in an existing clone. The list is on the [releases page](https://github.com/ondata/istat_mcp_server/releases).
+
 2. Create a virtual environment and install dependencies (Python >=3.11 required):
 
 **With uv (recommended):**
@@ -329,7 +331,22 @@ ruff check .
 
 ### Checks before merging into `main`
 
-There are no versioned releases: whatever is merged into `main` is what users install. The [CI workflow](.github/workflows/ci.yml) runs `uv run pytest` and `uv run ruff check .` on every pull request and on every push to `main`, including Dependabot pull requests. Merge only when the check is green. Tests use mocked responses and do not call the ISTAT API, so a live test before important changes is still manual.
+The [CI workflow](.github/workflows/ci.yml) runs `uv run pytest` and `uv run ruff check .` on every pull request and on every push to `main`, including Dependabot pull requests. Merge only when the check is green. Tests use mocked responses and do not call the ISTAT API, so a live test before important changes is still manual.
+
+### Releases
+
+`main` is the development version. Releases are git tags `vX.Y.Z` following [semantic versioning](https://semver.org/), published on the [releases page](https://github.com/ondata/istat_mcp_server/releases); they are made when needed, not on a fixed schedule. The package is not published on PyPI.
+
+To make a release:
+
+1. Open a pull request that sets the new `version` in `pyproject.toml` and runs `uv lock`, then merge it.
+2. Tag the merge commit and push the tag:
+```bash
+git switch main && git pull
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin v0.2.0
+```
+3. The [release workflow](.github/workflows/release.yml) checks that the tag matches the version in `pyproject.toml`, runs tests and lint, and creates the GitHub release with notes generated from the merged pull requests. If the tag and the version differ, it stops and creates nothing: delete the tag on GitHub and locally (`git push origin :v0.2.0` and `git tag -d v0.2.0`), fix the version and tag again.
 
 ## Project Structure
 
