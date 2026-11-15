@@ -346,7 +346,7 @@ git switch main && git pull
 git tag -a v0.2.0 -m "v0.2.0"
 git push origin v0.2.0
 ```
-3. The [release workflow](.github/workflows/release.yml) checks that the tag matches the version in `pyproject.toml`, runs tests and lint, and creates the GitHub release with notes generated from the merged pull requests. If the tag and the version differ, it stops and creates nothing: delete the tag (`git push origin :v0.2.0`), fix the version and tag again.
+3. The [release workflow](.github/workflows/release.yml) checks that the tag matches the version in `pyproject.toml`, runs tests and lint, and creates the GitHub release with notes generated from the merged pull requests. If the tag and the version differ, it stops and creates nothing: delete the tag on GitHub and locally (`git push origin :v0.2.0` and `git tag -d v0.2.0`), fix the version and tag again.
 
 ## Project Structure
 
