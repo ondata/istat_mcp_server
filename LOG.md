@@ -1,5 +1,9 @@
 # Log
 
+## 2026-11-15 (#88)
+
+- #88 (joylifet): `get_concepts` CLI subprocess started with `stdin=DEVNULL`; over stdio the inherited stdin is the MCP pipe and on Windows the child blocked until timeout (reported: 120 s timeout before, ~2.2 s after, Windows 11 / Python 3.14); new test asserts the DEVNULL stdin, does not reproduce the hang (CI is Linux)
+
 ## 2026-10-18 (#68 and follow-up)
 
 - #68 (Paolo Valletta): MCP client examples use the venv interpreter (`.venv/bin/python`, `.venv\Scripts\python.exe`), no `--cwd`; copilot guide fixed from `istat_mcp_server.server` (no `__main__`, exits at once) to `istat_mcp_server`; closes #55
