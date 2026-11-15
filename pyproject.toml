@@ -26,7 +26,7 @@ http = [
     "uvicorn>=0.30.0",
 ]
 dev = [
-    "pytest>=9.1.1",
+    "pytest>=9.2.0",
     "pytest-asyncio>=1.4.0",
     "pytest-mock>=3.17.0",
     "ruff>=0.17.1",
@@ -70,7 +70,7 @@ python_functions = ["test_*"]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.1.1",
+    "pytest>=9.2.0",
     "pytest-asyncio>=1.4.0",
     "pytest-mock>=3.17.0",
 ]
