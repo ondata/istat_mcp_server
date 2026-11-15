@@ -1,5 +1,6 @@
 """Tests for get_concepts tool and get_concepts_cli."""
 
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -187,6 +188,28 @@ async def test_get_concepts_fallback_to_english_when_italian_missing(mock_cache_
         )
 
     assert result[0].text == 'English description'
+
+
+@pytest.mark.asyncio
+async def test_get_concepts_subprocess_does_not_inherit_stdin(mock_cache_manager, mock_api_client):
+    """The CLI subprocess gets its own stdin instead of inheriting the server's.
+
+    Over stdio the server's stdin is the MCP protocol pipe: on Windows a child that inherits it
+    blocks until the client closes the pipe, so the tool call times out.
+    """
+    stdout = _concept_output('FREQ', 'Frequenza', 'Frequency')
+    proc = _make_process_mock(returncode=0, stdout=stdout)
+    spawn = AsyncMock(return_value=proc)
+
+    with patch('asyncio.create_subprocess_exec', spawn):
+        result = await handle_get_concepts(
+            {'concept_id': 'FREQ', 'lang': 'it'},
+            mock_cache_manager,
+            mock_api_client,
+        )
+
+    assert result[0].text == 'Frequenza'
+    assert spawn.call_args.kwargs.get('stdin') == asyncio.subprocess.DEVNULL
 
 
 @pytest.mark.asyncio
