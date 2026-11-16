@@ -1,5 +1,9 @@
 # Log
 
+## 2026-11-16 (v0.2.2)
+
+- Release v0.2.2: dependency updates from #97 (mcp 1.30.0 floor, pydantic 2.14.3, uvicorn 0.54.0, starlette 1.10.0, pytest 9.2.0)
+
 ## 2026-11-16 (dependencies)
 
 - Dependabot #92-#96 combined in one PR with `uv.lock` regenerated: mcp floor >=1.30.0 (lock already 1.30.0), pydantic 2.14.1 -> 2.14.3, uvicorn 0.42.0 -> 0.54.0, starlette 1.9.0 -> 1.10.0, pytest 9.1.1 -> 9.2.0
